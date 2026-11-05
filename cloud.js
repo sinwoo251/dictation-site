@@ -21,7 +21,17 @@ window.Cloud = (() => {
     },
     user: () => user,
     signIn: () => sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } }),
-    async signOut() { try { await sb.auth.signOut(); } finally { location.reload(); } },
+    /* 로그아웃: 이 기기에 남은 진도도 지운다 (공용 컴퓨터에서 다음 사람 계정에 섞이지 않게). 계정에는 그대로 남아 있음 */
+    async signOut() {
+      window.__signingOut = true;   // 페이지가 닫히며 다시 저장하지 않게 (template.html Store.save가 확인)
+      try { await sb.auth.signOut(); } catch (e) {}
+      try {
+        const ks = [];
+        for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(PREFIX)) ks.push(k); }
+        ks.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+      location.reload();
+    },
     async load(key) {
       const r = await rows(sb.from("progress").select("data").eq("video_id", key));
       return r.length ? r[0].data : null;

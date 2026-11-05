@@ -407,6 +407,7 @@ const Store = {
     try { return JSON.parse(localStorage.getItem(this.prefix + videoKey)); } catch (e) { return null; }
   },
   save(videoKey, progress) {
+    if (window.__signingOut) return false;   // 웹판 로그아웃 중: 지운 진도를 다시 쓰지 않음
     try { localStorage.setItem(this.prefix + videoKey, JSON.stringify(progress)); return true; }
     catch (e) { console.warn("저장 실패", e); return false; }
   },
