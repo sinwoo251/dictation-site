@@ -39,6 +39,7 @@ header h1{font-size:22px;line-height:1.35;margin:0 0 6px;letter-spacing:-.01em}
 .dot.perfect{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .dot.tried{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
 .dot.revealed{background:var(--soft);color:var(--muted);text-decoration:line-through}
+.dot.skip{border-style:dashed;color:var(--muted);background:transparent}
 .dot.cur{outline:2px solid var(--ink);outline-offset:1px;color:var(--ink)}
 .dot{position:relative}
 .dot.star::after{content:"★";position:absolute;top:-7px;right:-5px;font-size:11px;line-height:1;color:var(--star);
@@ -275,6 +276,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
     <button class="authbtn" id="authBtn" hidden></button>
     <h1 id="title"></h1>
     <div class="meta" id="meta"></div>
+    <div class="meta qnote" id="qualityNote" hidden></div>
   </header>
 
   <div class="bar"><i id="bar"></i></div>
@@ -306,6 +308,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
     <div class="actions">
       <button class="btn" id="btnHint">첫 글자 힌트</button>
       <button class="btn" id="btnReveal">정답 보기</button>
+      <button class="btn" id="btnSkip" title="소리와 글자가 안 맞는 이상한 문장은 건너뛰어요 (진행률·채점에서 빠짐)">건너뛰기</button>
       <button class="btn" id="btnPrev">← 이전</button>
       <button class="btn primary right" id="btnCheck">채점하기</button>
       <button class="btn" id="btnNext">다음 →</button>
@@ -807,6 +810,10 @@ function boot() {
     audio.src = URL.createObjectURL(new Blob([buf], { type: "audio/mp4" }));
   } catch (e) { if (e !== "skip") console.error(e); }
   const WEB = DATA.player === "youtube";
+  if (!DATA.captions && DATA.mode !== "review") {   // 공식 자막 없이 AI 받아쓰기로 만든 영상
+    $("qualityNote").hidden = false;
+    $("qualityNote").textContent = "ⓘ 자동 받아쓰기로 만든 영상이에요. 여러 사람이 겹쳐 말하거나 배경음악이 있는 곳은 글자가 틀릴 수 있어요 — 이상한 문장은 '건너뛰기'를 눌러 주세요.";
+  }
   if (location.protocol.startsWith("http") && !WEB) $("libLink").hidden = false;   // 서재에서 열었을 때만
   if (REVIEW) $("libLink").href = "/insights";
 
@@ -953,9 +960,10 @@ function boot() {
   const BLOCK = 10;
   const blockOf = i => Math.floor(i / BLOCK);
   const blockRange = b => [b * BLOCK, Math.min(S.length - 1, b * BLOCK + BLOCK - 1)];
+  const isDone = it => !!(it.status || it.skip);   // 건너뛴 문장도 '끝낸' 것으로 (구간 잠금·완주)
   function blockProgress(b) {
     const [a, z] = blockRange(b); let d = 0;
-    for (let i = a; i <= z; i++) if (get(i).status) d++;
+    for (let i = a; i <= z; i++) if (isDone(get(i))) d++;
     return [d, z - a + 1];
   }
   // 방금 이 문장으로 구간을 다 풀었으면 결과 아래에 '이어보기' 제안
@@ -975,7 +983,7 @@ function boot() {
   ──────────────────────────────────────────────────────────────── */
   const TIERS = [[95, "icon", "ICON", "S"], [85, "gold", "GOLD", "A"], [70, "silver", "SILVER", "B"], [0, "bronze", "BRONZE", "C"]];
   const GLOW = { icon: "#b9f5ff", gold: "#ffe08a", silver: "#e6ebf2", bronze: "#f0b37e" };
-  const doneAll = () => S.every((_, i) => get(i).status);
+  const doneAll = () => S.every((_, i) => isDone(get(i)));
   function cardStats() {
     const its = S.map((_, i) => get(i));
     const sc = its.map(it => it.revealed ? 0 : (it.bestG ?? it.best ?? 0));
@@ -1218,7 +1226,7 @@ function boot() {
     btn.classList.toggle("locked", d < n);
     btn.classList.toggle("watched", !!seen);
     btn.textContent = `🎬 ${a + 1}~${z + 1} 이어보기` + (d < n ? ` (${d}/${n})` : seen ? " ✓" : "");
-    const left = []; for (let i = a; i <= z; i++) if (!get(i).status) left.push(i + 1);
+    const left = []; for (let i = a; i <= z; i++) if (!isDone(get(i))) left.push(i + 1);
     btn.title = d < n ? `남은 문장: ${left.join(", ")}번 — 누르면 그 문장으로 가요` : "이 구간을 자막과 함께 이어서 들어요";
     $("reportBtn").textContent = `📊 ${a + 1}~${z + 1} 분석`;
   }
@@ -1306,7 +1314,7 @@ function boot() {
   $("watchBtn").onclick = () => {
     const b = +$("watchBtn").dataset.b, [d, n] = blockProgress(b), [a, z] = blockRange(b);
     if (d === n) return openPlayer(b);
-    const left = []; for (let i = a; i <= z; i++) if (!get(i).status) left.push(i);
+    const left = []; for (let i = a; i <= z; i++) if (!isDone(get(i))) left.push(i);
     toast(`아직 안 푼 문장: ${left.map(i => i + 1).join(", ")}번 — ${left[0] + 1}번으로 갈게요`, 3500);
     go(left[0]);
   };
@@ -1629,15 +1637,18 @@ function boot() {
       box.innerHTML = S.map((_, i) => `<button class="dot" data-i="${i}">${i + 1}</button>`).join("");
       box.onclick = e => { const i = e.target.dataset.i; if (i != null) go(+i); };
     }
-    let done = 0, perfect = 0;
+    let done = 0, perfect = 0, skipped = 0;
     [...box.children].forEach((b, i) => {
       const it = get(i);
-      b.className = "dot" + (it.status ? " " + it.status : "") + (it.star ? " star" : "") + (i === idx ? " cur" : "");
+      const sk = it.skip && !it.status;
+      b.className = "dot" + (it.status ? " " + it.status : "") + (sk ? " skip" : "") + (it.star ? " star" : "") + (i === idx ? " cur" : "");
       if (it.status) done++;
+      if (sk) skipped++;
       if (it.status === "perfect") perfect++;
     });
-    $("bar").style.width = (done / S.length * 100) + "%";
-    $("stats").textContent = `푼 문장 ${done}/${S.length} · 완벽 ${perfect}`;
+    $("bar").style.width = ((done + skipped) / S.length * 100) + "%";
+    $("stats").textContent = `푼 문장 ${done}/${S.length - skipped} · 완벽 ${perfect}` + (skipped ? ` · 건너뜀 ${skipped}` : "");
+    $("btnSkip").textContent = get(idx).skip ? "건너뛰기 취소" : "건너뛰기";
     const n = starred().length;
     $("starCount").textContent = n;
     $("starOnly").disabled = !n;
@@ -1651,6 +1662,13 @@ function boot() {
   $("play").onclick = () => { playCur(); $("input").focus(); };
   $("btnCheck").onclick = check;
   $("btnReveal").onclick = reveal;
+  $("btnSkip").onclick = () => {
+    const it = item(idx);
+    it.skip = !it.skip; it.lastAt = Date.now();
+    P.events.push({ at: Date.now(), k: KEYS[idx], skip: it.skip });
+    save();
+    if (it.skip && idx < S.length - 1) step(1); else { paintDots(); $("input").focus(); }
+  };
   $("btnHint").onclick = toggleHint;
   $("btnPrev").onclick = () => step(-1);
   $("btnNext").onclick = () => step(1);

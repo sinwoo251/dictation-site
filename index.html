@@ -120,7 +120,7 @@ footer a{color:inherit}
         <div class="thumb" style="background-image:url('https://i.ytimg.com/vi/${esc(v.id)}/mqdefault.jpg')">${v.unplayable ? `<span class="badge">재생 불가</span>` : ""}</div>
         <div class="vbody">
           <h3>${esc(v.title)}</h3>
-          <div class="vmeta">${esc(v.band)} · ${v.count}문장 · ${fmt(v.duration)}${v.wpm ? ` · 분당 ${v.wpm}단어` : ""}</div>
+          <div class="vmeta">${esc(v.band)} · ${v.count}문장 · ${fmt(v.duration)}${v.wpm ? ` · 분당 ${v.wpm}단어` : ""}${v.captions ? " · 공식 자막" : ""}</div>
           <div class="pbar"><i style="width:${pct}%"></i></div>
           <div class="pct">${pct ? `진행 ${pct}%` : "아직 안 풀었어요"}</div>
         </div>`;
