@@ -1,0 +1,1812 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>받아쓰기 · 받아쓰기</title>
+<style>
+:root{
+  --bg:#f6f3ec; --paper:#fffdf8; --ink:#1f1d1a; --muted:#7a746a; --line:#e4ddd0;
+  --accent:#2f5d50; --accent-ink:#fff; --ok:#2e7d4f; --ok-bg:#e3f2e8;
+  --bad:#c0392b; --bad-bg:#fbe7e4; --warn:#b7791f; --warn-bg:#fdf1dc; --soft:#efe9dd; --star:#e0a100;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16171a; --paper:#1f2125; --ink:#ece8e1; --muted:#9a948a; --line:#33363c;
+    --accent:#7fc4ae; --accent-ink:#10201b; --ok:#6fd39a; --ok-bg:#1d3326;
+    --bad:#f08a7d; --bad-bg:#3a2220; --warn:#e9b660; --warn-bg:#3a2f1c; --soft:#2a2c31; --star:#f2c14e;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+.authbtn{float:right;border:1px solid var(--line,#ddd);background:none;border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;color:inherit}
+.yt{position:relative;width:100%;max-width:420px;margin:0 auto 12px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.yt iframe,.yt #ytFrame,.yt .fake-yt{position:absolute;inset:0;width:100%;height:100%;color:#fff}
+.yt-start{position:absolute;inset:0;width:100%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:18px;cursor:pointer}
+.yt-err{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;background:#222;color:#fff;font-size:15px}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:28px 16px 80px}
+header h1{font-size:22px;line-height:1.35;margin:0 0 6px;letter-spacing:-.01em}
+.meta{color:var(--muted);font-size:13.5px}
+.meta a{color:inherit}
+.bar{height:6px;background:var(--soft);border-radius:99px;margin:18px 0 10px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px}
+.dot{width:30px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--paper);
+  font-size:11.5px;color:var(--muted);cursor:pointer;font-family:var(--mono);padding:0}
+.dot.perfect{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.dot.tried{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.dot.revealed{background:var(--soft);color:var(--muted);text-decoration:line-through}
+.dot.cur{outline:2px solid var(--ink);outline-offset:1px;color:var(--ink)}
+.dot{position:relative}
+.dot.star::after{content:"★";position:absolute;top:-7px;right:-5px;font-size:11px;line-height:1;color:var(--star);
+  text-shadow:0 0 2px var(--bg),0 0 2px var(--bg)}
+.dots.staronly .dot:not(.star){opacity:.28}
+.filters{display:flex;align-items:center;gap:8px;margin:-6px 0 14px;font-size:13px;color:var(--muted)}
+.filters .chip:disabled{opacity:.45;cursor:default}
+.starbtn{border:0;background:none;cursor:pointer;font-size:24px;line-height:1;color:var(--line);padding:2px 4px}
+.starbtn.on{color:var(--star)}
+.starbtn:hover{color:var(--star)}
+.wrongs{font-size:12.5px;color:var(--muted)}
+.wrongs.hot{color:var(--bad)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;
+  box-shadow:0 1px 0 rgba(0,0,0,.03),0 8px 24px -16px rgba(0,0,0,.18)}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.play{width:64px;height:64px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);
+  cursor:pointer;display:grid;place-items:center;flex:none;transition:transform .1s}
+.play:active{transform:scale(.95)}
+.play svg{width:26px;height:26px}
+.num{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.num b{font-size:20px;color:var(--ink)}
+.speeds{display:flex;gap:4px;margin-left:auto}
+.chip{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:99px;
+  padding:4px 10px;font-size:13px;cursor:pointer;font-family:var(--mono)}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+textarea{width:100%;min-height:96px;margin:18px 0 12px;padding:14px;border-radius:12px;resize:vertical;
+  border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:18px/1.55 inherit;font-family:inherit}
+textarea:focus{outline:none;border-color:var(--accent)}
+.hint{font-family:var(--mono);font-size:15px;color:var(--muted);letter-spacing:.02em;margin:-4px 0 12px;word-spacing:.25em}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;
+  padding:9px 14px;font-size:14.5px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.right{margin-left:auto}
+.result{margin-top:18px;padding:16px;border-radius:12px;background:var(--bg);font-size:18px;line-height:1.9;display:none}
+.result.show{display:block}
+.score{font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.score b{font-size:15px}
+.w{padding:1px 2px;border-radius:4px}
+.w.ok{color:var(--ok)}
+.w.miss{color:var(--bad);background:var(--bad-bg);font-weight:600}
+.alt{font-size:12.5px;color:var(--muted);margin:0 4px 0 2px;white-space:nowrap}
+.w.filler{color:var(--muted);opacity:.6;font-style:italic}
+.w.extra{color:var(--muted);text-decoration:line-through}
+.w.sub del{color:var(--muted);margin-right:3px}
+.w.sub ins{text-decoration:none;color:var(--bad);background:var(--bad-bg);font-weight:600;border-radius:4px;padding:0 2px}
+.answer{margin-top:8px;font-size:16px;color:var(--muted)}
+.korow{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:15.5px;line-height:1.6}
+.kobtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:3px 11px;font-size:13px;cursor:pointer;font-family:inherit}
+.kobtn.on{color:var(--ink);border-color:var(--muted)}
+.ko{margin-top:8px;color:var(--ink)}
+.script p .sko{display:block;font-family:inherit;margin-right:0;color:var(--muted);font-size:13.5px;margin:2px 0 0 26px}
+.keys{color:var(--muted);font-size:12.5px;margin-top:14px}
+kbd{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--paper)}
+details{margin-top:28px;border-top:1px solid var(--line);padding-top:14px}
+summary{cursor:pointer;color:var(--muted);font-size:14px}
+.script p{margin:6px 0;font-size:15px}
+.script p span{font-family:var(--mono);color:var(--muted);font-size:12px;margin-right:8px}
+.footer{display:flex;justify-content:space-between;margin-top:18px;color:var(--muted);font-size:12.5px}
+.tools{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+.w[data-si]{cursor:pointer}
+.w[data-si]:hover{outline:1.5px dashed var(--muted);outline-offset:1px}
+.w.saved{box-shadow:inset 0 -2px 0 var(--accent)}
+.wordhint{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.syncnote{margin-left:6px;opacity:.75}
+.src{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emptyrev{text-align:center;padding:40px 20px;font-size:18px}
+.emptyrev span{font-size:14px;color:var(--muted)}
+.tips{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:15px;line-height:1.5}
+.tipbody{margin-top:8px}
+.tiph{font-size:12.5px;color:var(--bad);font-weight:600;margin:6px 0 2px}
+.tiplist,.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.notes li{background:var(--soft);border-radius:8px;padding:6px 10px;font-size:14.5px}
+.tip{padding:4px 0 4px 26px;position:relative}
+.tip .ti{position:absolute;left:0;top:3px;font-size:14px}
+.tip.hot b{color:var(--bad)}
+.tip .say{font-family:var(--mono);font-size:14px;color:var(--accent)}
+.tip .tl{font-size:11.5px;color:var(--muted);background:var(--soft);border-radius:99px;padding:0 7px;margin-left:4px}
+.tip .tn{font-size:13px;color:var(--muted)}
+.tipmore{margin-top:6px;border:0;padding:0}
+.tipmore summary{font-size:13px;color:var(--muted);cursor:pointer}
+.tipmore .tiplist{margin-top:6px}
+.lvrow{margin-top:-8px}
+.lvlab{font-size:12.5px;color:var(--muted);margin-right:2px}
+.chip.lv.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.lvnote{font-size:12.5px;color:var(--muted)}
+.lvbadge{font-size:13px;font-weight:700;vertical-align:middle;background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:2px 10px}
+.cloze{margin:18px 0 12px;padding:14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-size:18px;line-height:2.2}
+.cz-w{color:var(--ink)}
+.cz-in{font:inherit;font-size:17px;border:0;border-bottom:2px solid var(--accent);background:var(--paper);color:var(--ink);border-radius:6px 6px 0 0;
+  padding:1px 6px;margin:0 1px;min-width:3ch;text-align:center}
+.cz-in:focus{outline:2px solid var(--accent);outline-offset:1px}
+.cz-in.ok{border-color:var(--ok);background:var(--ok-bg)} .cz-in.bad{border-color:var(--bad);background:var(--bad-bg)}
+.cz-in.shown{color:var(--muted);font-style:italic}
+.w.given{color:var(--muted)}
+.liblink{display:inline-block;margin-bottom:8px;color:var(--muted);font-size:13.5px;text-decoration:none}
+.liblink:hover{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);
+  padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0}
+.blockdone{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-size:15px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.blockdone .btn{padding:6px 12px;font-size:14px}
+#watchBtn.watched{border-color:var(--ok);color:var(--ok)}
+#watchBtn.locked{opacity:.6;border-style:dashed}
+.player{position:fixed;inset:0;background:rgba(10,10,10,.55);display:grid;place-items:center;z-index:20;padding:16px}
+.player[hidden]{display:none}
+.pl-box{background:var(--paper);color:var(--ink);border-radius:18px;width:100%;max-width:720px;padding:22px 24px 20px;
+  box-shadow:0 20px 60px -20px rgba(0,0,0,.5)}
+.pl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pl-head b{font-size:16px}
+.pl-x{background:none;border:0;font-size:20px;color:var(--muted);cursor:pointer;padding:4px 8px}
+.pl-sub{min-height:210px;display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center}
+.pl-line{margin:0}
+.pl-line.prev,.pl-line.next{font-size:14.5px;color:var(--muted);opacity:.55;min-height:1.4em}
+.pl-line.cur{font-size:23px;line-height:1.5;font-weight:500}
+.wd{color:var(--muted);transition:color .12s}
+.wd.done{color:var(--ink)}
+.wd.now{color:var(--accent);text-decoration:underline;text-underline-offset:5px}
+.wd[data-f]{font-style:italic;opacity:.6}
+.pl-ko{margin:0;font-size:16px;color:var(--accent)}
+.pl-bar{height:5px;background:var(--soft);border-radius:99px;overflow:hidden;margin:16px 0 14px}
+.pl-bar>i{display:block;height:100%;width:0;background:var(--accent)}
+.pl-ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pl-ctrl .play{width:52px;height:52px}
+.pl-time{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.pl-tog{margin-left:auto;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+.pl-done{color:var(--ok);font-size:14px}
+@media (max-width:520px){ .pl-line.cur{font-size:19px} .pl-box{padding:18px 16px} }
+/* ── 완료 카드 (A-6) ── */
+.pack{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;
+  background:radial-gradient(ellipse at center,rgba(20,22,30,.86),rgba(5,6,10,.96))}
+.pack[hidden]{display:none}
+.pk-stage{position:relative;width:280px;height:420px;perspective:1200px}
+.pk-pack{position:absolute;inset:12px 18px;border-radius:14px;cursor:pointer;overflow:hidden;
+  background:linear-gradient(150deg,#1d3b33,#2f5d50 45%,#c9a34a 100%);box-shadow:0 20px 60px -10px rgba(0,0,0,.7);
+  display:grid;place-items:center;text-align:center;color:#fff;font-size:15px;letter-spacing:.06em;
+  animation:pk-shake 1.6s ease-in-out infinite}
+.pk-pack b{display:block;font-size:30px;letter-spacing:.02em;margin-top:6px}
+.pk-pack small{display:block;margin-top:14px;font-size:12px;opacity:.75;letter-spacing:0}
+.pk-shine{position:absolute;inset:-50%;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.45) 50%,transparent 60%);
+  animation:pk-shine 2.2s linear infinite}
+@keyframes pk-shine{from{transform:translateX(-40%)}to{transform:translateX(40%)}}
+@keyframes pk-shake{0%,100%{transform:rotate(0)}10%{transform:rotate(-2deg)}20%{transform:rotate(2deg)}30%{transform:rotate(-1deg)}40%{transform:rotate(0)}}
+.pk-pack.open{animation:pk-open .55s ease-in forwards;pointer-events:none}
+@keyframes pk-open{to{transform:scale(1.25);opacity:0;filter:brightness(2.5)}}
+.pk-flash{position:absolute;inset:-60%;border-radius:50%;opacity:0;pointer-events:none;
+  background:radial-gradient(circle,var(--glow,#fff) 0%,transparent 60%)}
+.pk-flash.go{animation:pk-flash 1s ease-out forwards}
+@keyframes pk-flash{0%{opacity:0;transform:scale(.3)}25%{opacity:1}100%{opacity:0;transform:scale(1.4)}}
+.pk-hint{position:absolute;left:0;right:0;bottom:-40px;text-align:center;color:#cfd3da;font-size:14px;margin:0}
+.pk-actions{position:absolute;left:0;right:0;bottom:-58px;display:flex;gap:8px;justify-content:center}
+.pk-actions[hidden]{display:none}
+.fcard{position:absolute;inset:0;opacity:0;transform:rotateY(180deg) scale(.8);transform-style:preserve-3d;pointer-events:none}
+.fcard.show{animation:fc-in .9s cubic-bezier(.2,.9,.25,1.15) forwards;pointer-events:auto}
+@keyframes fc-in{0%{opacity:0;transform:rotateY(180deg) scale(.8)}40%{opacity:1}100%{opacity:1;transform:rotateY(0) scale(1)}}
+.fc{position:absolute;inset:0;padding:22px 22px 18px;color:var(--fc-ink);background:var(--fc-bg);
+  clip-path:polygon(50% 0,100% 6%,100% 88%,50% 100%,0 88%,0 6%);display:flex;flex-direction:column;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.25)}
+.fc::before{content:"";position:absolute;inset:7px;clip-path:polygon(50% 0,100% 6%,100% 88%,50% 100%,0 88%,0 6%);
+  border:1.5px solid var(--fc-line);pointer-events:none}
+.fc.t-bronze{--fc-bg:linear-gradient(160deg,#e7b98a,#a8683c 55%,#6e3f1f);--fc-ink:#2a160a;--fc-line:rgba(60,30,10,.35)}
+.fc.t-silver{--fc-bg:linear-gradient(160deg,#f4f6f8,#b8bfc8 55%,#7d8691);--fc-ink:#1d232b;--fc-line:rgba(30,40,50,.3)}
+.fc.t-gold{--fc-bg:linear-gradient(160deg,#fff1b8,#e5bd4f 50%,#a77a16);--fc-ink:#2b1f00;--fc-line:rgba(70,50,0,.35)}
+.fc.t-icon{--fc-ink:#fff;--fc-line:rgba(255,255,255,.5);
+  --fc-bg:linear-gradient(135deg,#3b1d6e,#1f6f8b 30%,#2aa876 50%,#d4a017 70%,#b83280 90%);background-size:300% 300%;
+  animation:fc-holo 5s ease infinite}
+@keyframes fc-holo{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.fc-top{display:flex;gap:10px;align-items:flex-start;margin-top:8px}
+.fc-ovr{display:flex;flex-direction:column;align-items:center;min-width:64px}
+.fc-ovr b{font-size:46px;line-height:1;font-weight:800;font-family:var(--mono)}
+.fc-ovr span{font-size:12px;font-weight:700;letter-spacing:.14em;margin-top:4px}
+.fc-ovr i{font-style:normal;font-size:20px;margin-top:6px}
+.fc-pic{flex:1;height:112px;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.18);display:grid;place-items:center;font-size:40px}
+.fc-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.fc-name{margin:12px 6px 0;text-align:center;font-weight:800;font-size:14.5px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:2.6em}
+.fc-by{text-align:center;font-size:11.5px;opacity:.8;margin:3px 6px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-rule{height:0;border-top:1.5px solid var(--fc-line);margin:9px 14px 9px}
+.fc-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;padding:0 10px;font-family:var(--mono)}
+.fc-stats div{display:flex;align-items:baseline;gap:8px}
+.fc-stats b{font-size:19px;min-width:44px;text-align:right;white-space:nowrap}
+.fc-stats b small{font-size:10.5px;font-weight:600;margin-left:1px;opacity:.8}
+.fc-stats em{font-style:normal}
+.fc-stats span{white-space:nowrap;font-size:12.5px;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;font-weight:600}
+.fc-foot{margin-top:auto;margin-bottom:22px;text-align:center;font-size:11.5px;opacity:.75}
+#cardBtn[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){ .pk-pack,.pk-shine,.fc.t-icon{animation:none} .fcard.show{animation:none;opacity:1;transform:none} }
+/* ── 채점 분석 리포트 (C-2) ── */
+.report{position:fixed;inset:0;background:rgba(10,10,10,.55);display:grid;place-items:center;z-index:25;padding:16px}
+.rp-box{background:var(--paper);color:var(--ink);border-radius:18px;width:100%;max-width:680px;max-height:calc(100vh - 32px);overflow:auto;
+  padding:20px 22px 22px;box-shadow:0 20px 60px -20px rgba(0,0,0,.5)}
+.rp-box h4{margin:18px 0 8px;font-size:14.5px}
+.rp-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.rp-score{width:104px;height:104px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#2b1f00;background:#e5bd4f}
+.rp-score b{font-size:40px;line-height:1;font-family:var(--mono)}
+.rp-score span{font-size:12px;font-weight:700;margin-top:4px;letter-spacing:.04em}
+.rp-score.t-icon{background:linear-gradient(135deg,#7ee8fa,#eec0c6 50%,#d4a017);color:#1d1440}
+.rp-score.t-silver{background:#c9ced6;color:#1d232b} .rp-score.t-bronze{background:#c98b5a;color:#2a160a}
+.rp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;min-width:240px}
+.rp-stats div{background:var(--bg);border-radius:10px;padding:8px 6px;text-align:center;font-size:13px;color:var(--muted)}
+.rp-stats b{font-size:20px;color:var(--ink);font-family:var(--mono)}
+.rp-stats span{display:block;font-size:11.5px;margin-top:2px}
+.rp-rule{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+.rp-focus{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14.5px;line-height:1.55}
+.rp-cat{margin:10px 0 12px}
+.rp-ch{display:flex;justify-content:space-between;font-size:14.5px} .rp-ch span{font-size:12.5px;color:var(--muted)}
+.rp-cb{height:7px;background:var(--soft);border-radius:99px;overflow:hidden;margin:4px 0}
+.rp-cb i{display:block;height:100%;background:var(--warn)}
+.rp-why{font-size:13px;color:var(--muted)}
+.rp-ex{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin-top:4px}
+.rp-ex del{color:var(--muted)} .rp-ex b{color:var(--bad)}
+.rp-retry{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rp-retry li{background:var(--bg);border-radius:10px;padding:7px 10px;font-size:13.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.rp-txt{flex:1 1 100%;color:var(--muted)}
+.rp-bars{display:flex;gap:4px;align-items:flex-end;height:96px;padding-bottom:18px;overflow-x:auto}
+.rp-bar{flex:1;min-width:16px;height:100%;border:0;background:var(--soft);border-radius:5px 5px 0 0;position:relative;cursor:pointer;padding:0}
+.rp-bar i{position:absolute;left:0;right:0;bottom:0;border-radius:5px 5px 0 0;background:var(--muted)}
+.rp-bar i.s{background:#5fb3c9} .rp-bar i.a{background:#e5bd4f} .rp-bar i.b{background:#aeb6c0} .rp-bar i.c{background:#c98b5a}
+.rp-bar span{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);font-family:var(--mono)}
+.rp-act{margin-top:18px}
+.muted{color:var(--muted)} .small{font-size:12.5px}
+@media (max-width:520px){ .rp-stats{grid-template-columns:repeat(2,1fr)} .rp-score{width:88px;height:88px} .rp-score b{font-size:32px} }
+@media (max-width:520px){ .speeds{margin-left:0;width:100%} .btn.right{margin-left:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="liblink" id="libLink" href="/" hidden>← 서재</a>
+    <a class="liblink" id="shelfLink" href="./" hidden>← 영상 목록</a>
+    <button class="authbtn" id="authBtn" hidden></button>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div class="bar"><i id="bar"></i></div>
+  <div class="dots" id="dots"></div>
+  <div class="filters">
+    <button class="chip" id="starOnly" title="별표 붙은 문장만 오가며 풀기">★만 풀기 · <span id="starCount">0</span></button>
+    <button class="chip" id="watchBtn" title="10문장 구간을 다 풀면 이어서 들을 수 있어요"></button>
+    <button class="chip" id="reportBtn" title="지금 구간의 채점 분석">📊 구간 분석</button>
+    <span id="filterNote"></span>
+  </div>
+  <div class="filters lvrow" id="lvRow"></div>
+  <div class="yt" id="yt" hidden><div id="ytFrame"></div><button class="yt-start" id="ytStart" hidden>▶ 눌러서 시작</button><p class="yt-err" id="ytErr" hidden></p></div>
+
+  <section class="card">
+    <div class="top">
+      <button class="play" id="play" title="듣기 (Tab)" aria-label="듣기">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <div class="num">문장 <b id="cur">1</b> / <span id="tot"></span><span class="src" id="src"></span></div>
+      <button class="starbtn" id="star" title="별표: 다시 풀 문장 표시" aria-label="별표">★</button>
+      <span class="wrongs" id="wrongs"></span>
+      <div class="speeds" id="speeds"></div>
+    </div>
+
+    <div class="cloze" id="cloze" hidden></div>
+    <textarea id="input" placeholder="들리는 문장을 그대로 적어 보세요" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="hint" id="hint" hidden></div>
+
+    <div class="actions">
+      <button class="btn" id="btnHint">첫 글자 힌트</button>
+      <button class="btn" id="btnReveal">정답 보기</button>
+      <button class="btn" id="btnPrev">← 이전</button>
+      <button class="btn primary right" id="btnCheck">채점하기</button>
+      <button class="btn" id="btnNext">다음 →</button>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <div class="keys"><kbd>Tab</kbd> 다시 듣기 · <kbd>Enter</kbd> 채점 → 한 번 더 누르면 다음 문장 · <kbd>Shift</kbd>+<kbd>Tab</kbd> 앞 문장부터 이어 듣기</div>
+  </section>
+
+  <details>
+    <summary>전체 스크립트 보기 (정답 주의)</summary>
+    <div class="script" id="script"></div>
+  </details>
+
+  <div class="footer">
+    <span><span id="stats"></span> <span class="syncnote" id="syncNote"></span></span>
+    <span class="tools">
+      <button class="linkbtn" id="export">진도 내보내기</button>
+      <button class="linkbtn" id="import">진도 불러오기</button>
+      <button class="linkbtn" id="cardBtn" hidden></button>
+      <button class="linkbtn" id="reportAll" title="영상 전체의 채점 분석">📊 전체 분석</button>
+      <button class="linkbtn" id="cardPreview" title="지금까지의 진도로 완료 카드를 미리 열어 봐요 (기록은 안 남아요)">🎴 카드 미리보기</button>
+      <button class="linkbtn" id="reset">진도 초기화</button>
+    </span>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+  </div>
+</div>
+
+<div class="player" id="player" hidden>
+  <div class="pl-box" role="dialog" aria-modal="true" aria-labelledby="plTitle">
+    <div class="pl-head"><b id="plTitle"></b><button class="pl-x" id="plClose" aria-label="닫기" title="닫기 (Esc)">✕</button></div>
+    <div class="pl-sub">
+      <p class="pl-line prev" id="plPrev"></p>
+      <p class="pl-line cur" id="plCur"></p>
+      <p class="pl-ko" id="plKo" hidden></p>
+      <p class="pl-line next" id="plNext"></p>
+    </div>
+    <div class="pl-bar"><i id="plBar"></i></div>
+    <div class="pl-ctrl">
+      <button class="play" id="plPlay" aria-label="재생/일시정지" title="재생/일시정지 (스페이스)"></button>
+      <span class="pl-time" id="plTime"></span>
+      <span class="pl-done" id="plDone"></span>
+      <label class="pl-tog"><input type="checkbox" id="plKoTog"> 한국어 자막</label>
+    </div>
+  </div>
+</div>
+
+<div class="pack" id="pack" hidden>
+  <div class="pk-stage">
+    <div class="pk-pack" id="pkPack" role="button" tabindex="0" aria-label="카드 팩 열기"><div class="pk-shine"></div>
+      <span>DICTATION<b>완주 팩</b><small>눌러서 열기</small></span></div>
+    <div class="pk-flash" id="pkFlash"></div>
+    <div class="fcard" id="fcard">
+      <div class="fc" id="fc">
+        <div class="fc-top">
+          <div class="fc-ovr"><b id="fcOvr">0</b><span id="fcTier"></span><i>🎧</i></div>
+          <div class="fc-pic" id="fcPic">🎬</div>
+        </div>
+        <div class="fc-name" id="fcName"></div>
+        <div class="fc-by" id="fcBy"></div>
+        <div class="fc-rule"></div>
+        <div class="fc-stats" id="fcStats"></div>
+        <div class="fc-foot" id="fcFoot"></div>
+      </div>
+    </div>
+    <p class="pk-hint" id="pkHint">모든 문장을 끝냈어요! 팩을 눌러 보세요</p>
+    <div class="pk-actions" id="pkActions" hidden><button class="btn" id="pkReport">📊 전체 분석</button><button class="btn" id="pkClose">닫기</button></div>
+  </div>
+</div>
+
+<div class="report" id="report" hidden>
+  <div class="rp-box" role="dialog" aria-modal="true" aria-labelledby="rpTitle">
+    <div class="pl-head"><b id="rpTitle"></b><button class="pl-x" id="rpClose" aria-label="닫기" title="닫기 (Esc)">✕</button></div>
+    <div id="rpBody"></div>
+  </div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="cloud.js"></script>
+<script>
+let DATA = /*__DATA__*/null;
+const WEB_ID = new URLSearchParams(location.search).get("v");   // 웹판: study.html?v=<영상ID>
+const AUDIO_B64 = "";
+
+/* ════════════════════════════════════════════════════════════════════
+   저장 창구 (Store)
+   ─ 진도를 '어디에' 저장할지는 이 창구만 안다.
+   ─ 지금(1단계): 브라우저 저장소(localStorage)
+   ─ 2단계: 내 Mac 프로그램(로컬 서버) / 3단계: Supabase 로 안쪽만 바꾸면
+     나머지 코드는 그대로 쓴다.
+   ════════════════════════════════════════════════════════════════════ */
+const Store = {
+  prefix: "dictation:v2:",
+  load(videoKey) {
+    try { return JSON.parse(localStorage.getItem(this.prefix + videoKey)); } catch (e) { return null; }
+  },
+  save(videoKey, progress) {
+    try { localStorage.setItem(this.prefix + videoKey, JSON.stringify(progress)); return true; }
+    catch (e) { console.warn("저장 실패", e); return false; }
+  },
+  // 옛 버전(v1) 진도 찾기: 같은 영상으로 만든 예전 페이지의 기록
+  findLegacy(videoId, created) {
+    const out = [];
+    try {
+      const exact = "dictation:" + videoId + ":" + created;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("dictation:" + videoId + ":") && !k.startsWith(this.prefix)) {
+          const v = JSON.parse(localStorage.getItem(k));
+          if (v && v.items) out.push({ key: k, exact: k === exact, state: v });
+        }
+      }
+    } catch (e) {}
+    return out.sort((a, b) => b.exact - a.exact);
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   글자 다루기 (채점·문장 맞추기에 공통으로 쓰는 도구)
+   ════════════════════════════════════════════════════════════════════ */
+// 말버릇: 들려도 안 써도 되고, 써도 틀리지 않는 단어
+const FILLERS = new Set(["um", "umm", "uh", "uhh", "uhm", "er", "erm", "ah", "hmm", "hm", "mm", "mhm", "eh"]);
+const tokens = t => t.toLowerCase()
+  .replace(/[’‘`]/g, "'").replace(/[“”]/g, '"')
+  .replace(/[-–—/]/g, " ")
+  .replace(/[^a-z0-9'\s]/g, " ")
+  .split(/\s+/).map(w => w.replace(/^'+|'+$/g, "")).filter(Boolean);
+const coreTokens = t => tokens(t).filter(w => !FILLERS.has(w));
+const display = t => t.replace(/[-–—/]/g, " ").split(/\s+/)
+  .map(w => w.replace(/^[^A-Za-z0-9']+|[^A-Za-z0-9']+$/g, "")).filter(w => tokens(w).length);
+const isFiller = w => FILLERS.has(tokens(w)[0]);
+
+/* ════════════════════════════════════════════════════════════════════
+   채점 규칙: 축약형과 풀어 쓴 형태를 같은 것으로 본다
+   ─ 단어를 '기본 조각'으로 풀어서 비교한다.  who's → who + 's,  don't → do + not
+   ─ 's 는 is/has 둘 다, 'd 는 would/had 둘 다 정답 (뜻이 두 가지라서)
+   ─ John's 같은 소유격은 풀지 않는다 (아래 목록에 있는 단어 뒤의 's 만 품)
+   ════════════════════════════════════════════════════════════════════ */
+const SPECIAL = {
+  "won't": ["will", "not"], "can't": ["can", "not"], "cannot": ["can", "not"], "shan't": ["shall", "not"],
+  "ain't": ["ain't"], "let's": ["let", "us"], "y'all": ["you", "all"],
+  "gonna": ["going", "to"], "wanna": ["want", "to"], "gotta": ["got", "to"],
+  "kinda": ["kind", "of"], "sorta": ["sort", "of"], "ok": ["okay"], "alright": ["all", "right"],
+};
+"zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty"
+  .split(" ").forEach((w, i) => SPECIAL[String(i)] = [w]);
+"thirty forty fifty sixty seventy eighty ninety".split(" ").forEach((w, i) => SPECIAL[String((i + 3) * 10)] = [w]);
+const S_BASES = new Set(("it he she that there here what who where when how why this " +
+  "everyone everybody someone somebody nobody nothing something everything one").split(" "));
+const D_BASES = new Set("i you he she it we they that there who what".split(" "));
+function expandWord(w) {
+  if (SPECIAL[w]) return SPECIAL[w];
+  let m;
+  if ((m = w.match(/^(.+)n't$/))) return [m[1], "not"];
+  if ((m = w.match(/^(.+)'(re|ve|ll|m)$/))) return [m[1], { re: "are", ve: "have", ll: "will", m: "am" }[m[2]]];
+  if ((m = w.match(/^(.+)'s$/)) && S_BASES.has(m[1])) return [m[1], "'s"];
+  if ((m = w.match(/^(.+)'d$/)) && D_BASES.has(m[1])) return [m[1], "'d"];
+  return [w];
+}
+const AMBIG = { "'s": ["is", "has"], "'d": ["would", "had"] };
+const same = (a, b) => a === b || (AMBIG[a] || []).includes(b) || (AMBIG[b] || []).includes(a);
+
+/**
+ * 정답 문장과 내가 쓴 답을 비교한다.
+ * 반환: { seq: 화면에 그릴 순서대로 [{t:"ok"|"miss"|"sub"|"extra"|"filler", w, typed, alt}], ok, total, extra }
+ */
+function grade(answer, typedText) {
+  const words = display(answer).map(w => ({ w, filler: isFiller(w) }));
+  const E = [];   // 정답 조각 [{p, wi}]
+  words.forEach((o, wi) => { if (!o.filler) tokens(o.w).flatMap(expandWord).forEach(p => E.push({ p, wi })); });
+  const T = [];   // 내 답 조각 [{p, gi, surf}]
+  tokens(typedText).filter(w => !FILLERS.has(w))
+    .forEach((surf, gi) => expandWord(surf).forEach(p => T.push({ p, gi, surf })));
+
+  // 가장 많이 맞는 짝 찾기 (최장 공통 부분열)
+  const n = E.length, m = T.length;
+  const L = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    L[i][j] = same(E[i].p, T[j].p) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ops = []; let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && same(E[i].p, T[j].p)) { ops.push({ t: "ok", e: E[i], ty: T[j] }); i++; j++; }
+    else if (j < m && (i === n || L[i][j + 1] >= L[i + 1][j])) { ops.push({ t: "extra", ty: T[j] }); j++; }
+    else { ops.push({ t: "miss", e: E[i] }); i++; }
+  }
+
+  // 조각 결과 → 단어 결과로 묶기
+  const per = words.map(() => ({ oks: 0, parts: 0, typed: [] }));
+  const loose = [];   // 어느 단어에도 속하지 않는 '없는 단어' [{pos, surf, gi}]
+  let lastWi = -1;
+  ops.forEach((o, k) => {
+    if (o.t !== "extra") {
+      const r = per[o.e.wi]; r.parts++; if (o.t === "ok") { r.oks++; r.typed.push(o.ty); }
+      lastWi = o.e.wi; return;
+    }
+    const next = ops.slice(k + 1).find(x => x.t !== "extra");
+    const nextWi = next ? next.e.wi : words.length;
+    if (next && nextWi === lastWi) per[lastWi].typed.push(o.ty);       // 한 단어 안에 끼어든 것
+    else loose.push({ pos: nextWi, surf: o.ty.surf, gi: o.ty.gi });
+  });
+  const surfOf = list => { const seen = new Set(), out = [];
+    list.forEach(t => { if (!seen.has(t.gi)) { seen.add(t.gi); out.push(t.surf); } }); return out.join(" "); };
+
+  let seq = [];
+  words.forEach((o, wi) => {
+    if (o.filler) { seq.push({ t: "filler", w: o.w, wi }); return; }
+    loose.filter(x => x.pos === wi).forEach(x => seq.push({ t: "extra", w: x.surf }));
+    const r = per[wi], typed = surfOf(r.typed);
+    if (r.parts && r.oks === r.parts) {
+      const mine = tokens(o.w).join(" ");
+      seq.push({ t: "ok", w: o.w, wi, gis: [...new Set(r.typed.map(t => t.gi))].join(","),
+                 alt: typed && typed !== mine && !(r.typed.length && typed.replace(/'/g, "") === mine.replace(/'/g, "")) ? typed : "" });
+    } else if (typed) seq.push({ t: "sub", w: o.w, wi, typed });
+    else seq.push({ t: "miss", w: o.w, wi });
+  });
+  loose.filter(x => x.pos === words.length).forEach(x => seq.push({ t: "extra", w: x.surf }));
+
+  // 같은 자리의 '없는 단어 + 빠진 단어'는 '바꿔 씀'으로 묶기 (말버릇은 건너뛰고 본다)
+  const out = [];
+  for (let k = 0; k < seq.length; k++) {
+    const a = seq[k]; let b = k + 1; const fill = [];
+    while (seq[b] && seq[b].t === "filler") fill.push(seq[b++]);
+    const B = seq[b];
+    if (a.t === "extra" && B && B.t === "miss") { out.push(...fill, { t: "sub", typed: a.w, w: B.w, wi: B.wi }); k = b; }
+    else if (a.t === "miss" && B && B.t === "extra") { out.push({ t: "sub", typed: B.w, w: a.w, wi: a.wi }, ...fill); k = b; }
+    else out.push(a);
+  }
+  seq = out;
+  // 내 답 한 단어가 정답 여러 단어에 걸치면(don't → do not) 설명은 마지막 단어에만
+  for (let k = 0; k < seq.length - 1; k++)
+    if (seq[k].alt && seq[k + 1].t === "ok" && seq[k + 1].gis === seq[k].gis) seq[k].alt = "";
+  const total = words.filter(o => !o.filler).length;
+  return { seq, total, ok: seq.filter(o => o.t === "ok").length, extra: seq.filter(o => o.t === "extra").length };
+}
+
+// 문장 '이름표': 문장 내용으로 만든 짧은 코드. 다시 생성해도 내용이 같으면 같은 이름표.
+function hash(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+}
+function sentenceKeys(sentences) {
+  const seen = {};
+  return sentences.map(s => {
+    const base = hash(coreTokens(s.text).join(" "));
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] > 1 ? base + "-" + seen[base] : base;
+  });
+}
+// 두 글이 얼마나 비슷한지 (0~1): 겹치는 단어 비율
+function similarity(a, b) {
+  const A = coreTokens(a), B = coreTokens(b);
+  if (!A.length || !B.length) return 0;
+  const bag = {}; A.forEach(w => bag[w] = (bag[w] || 0) + 1);
+  let common = 0; B.forEach(w => { if (bag[w] > 0) { common++; bag[w]--; } });
+  return (2 * common) / (A.length + B.length);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   진도 형식 (schema 2) — 2·3단계에서도 같은 모양을 쓴다
+   {
+     schema: 2, video, title,
+     cur: 지금 보던 문장 이름표, speed,
+     items: { 문장이름표: { typed, status, best, attempts, wrong, lastWrong, lastAt, star, starOff, revealed(정답 본 적 있음) } },
+     card / cards: 완료 카드(최근 / 전체 기록), starOnly: ★만 풀기 켜짐 여부, showKo: 해석 펼침 여부, hideTips: 학습 설명 접힘, showKoSub: 이어보기 한국어 자막,
+     watched: { 구간번호: 끝까지 들은 시각 },
+     events: [ { at, k, n, score, miss:[], sub:[[쓴 것, 정답]], extra:[] } ]   ← 채점 기록
+   }
+   status: "" | "tried" | "perfect" | "revealed"
+   ════════════════════════════════════════════════════════════════════ */
+const RANK = { "": 0, revealed: 1, tried: 2, perfect: 3 };
+const MAX_EVENTS = 3000;
+const newItem = () => ({ typed: "", status: "", best: 0, attempts: 0, wrong: 0, lastWrong: "", lastAt: 0, star: false, starOff: false });
+const STAR_AUTO = 5;   // 이만큼 틀리면 자동으로 별표
+function mergeItem(a, b) { // 두 기록 합치기 (문장이 합쳐졌을 때 등)
+  if (!a) return b;
+  return {
+    ...a,
+    typed: a.typed || b.typed,
+    status: RANK[b.status] > RANK[a.status] ? b.status : a.status,
+    best: Math.max(a.best || 0, b.best || 0),
+    attempts: (a.attempts || 0) + (b.attempts || 0),
+    wrong: (a.wrong || 0) + (b.wrong || 0),
+    lastAt: Math.max(a.lastAt || 0, b.lastAt || 0),
+    star: !!(a.star || b.star), starOff: !!(a.starOff && b.starOff), revealed: !!(a.revealed || b.revealed),
+  };
+}
+// v1(예전) 기록 한 개 → v2 모양
+const fromV1 = it => ({ ...newItem(), typed: it.text || "", status: it.status || "", best: it.score || 0,
+                        attempts: it.status && it.status !== "revealed" ? 1 : 0 });
+
+/**
+ * 예전 기록을 지금 문장들에 옮겨 붙인다.
+ * entries: [{ pos: 예전 순서(0부터), text: 예전 문장 내용 또는 내가 썼던 답, item }]
+ * 1) 내용이 비슷한 문장을 근처(±20문장)에서 찾고
+ * 2) 못 찾으면 앞뒤로 찾은 문장들의 위치 차이를 이용해 자리를 짐작한다.
+ */
+function remapEntries(entries, sentences, keys, minSim) {
+  const out = {}; let matched = 0, guessed = 0, lost = 0;
+  const placed = []; // [예전 pos, 새 index]
+  let lastJ = 0;
+  const pending = [];
+  for (const e of entries) {
+    let best = -1, bestS = 0;
+    if (e.text) {
+      for (let j = Math.max(lastJ - 3, e.pos - 20, 0); j < Math.min(sentences.length, e.pos + 21); j++) {
+        const sim = similarity(e.text, sentences[j].text);
+        if (sim > bestS) { bestS = sim; best = j; }
+      }
+    }
+    if (best >= 0 && bestS >= minSim) {
+      out[keys[best]] = mergeItem(out[keys[best]], e.item); placed.push([e.pos, best]);
+      lastJ = best; matched++;
+    } else pending.push(e);
+  }
+  for (const e of pending) {
+    if (!placed.length) { lost++; continue; }
+    let near = placed[0];
+    for (const p of placed) if (Math.abs(p[0] - e.pos) < Math.abs(near[0] - e.pos)) near = p;
+    const j = e.pos + (near[1] - near[0]);
+    if (j >= 0 && j < sentences.length) { out[keys[j]] = mergeItem(out[keys[j]], e.item); guessed++; }
+    else lost++;
+  }
+  return { items: out, matched, guessed, lost };
+}
+
+/**
+ * 두 진도 합치기 (파일 버전 ↔ 서재, 다른 브라우저끼리)
+ * 문장마다 '나중에 푼 쪽'을 기준으로 하되, 색(완벽>시도>정답봄)·최고 점수·정답 본 기록은 좋은/있는 쪽을 살린다.
+ * 채점 기록(events)과 완료 카드는 합집합.
+ */
+function mergeProgress(A, B) {
+  if (!A) return B; if (!B) return A;
+  const last = X => Math.max(0, ...Object.values(X.items || {}).map(i => i.lastAt || 0), ...(X.events || []).map(e => e.at || 0));
+  const [N, O] = last(A) >= last(B) ? [A, B] : [B, A];
+  const items = {};
+  for (const k of new Set([...Object.keys(A.items || {}), ...Object.keys(B.items || {})])) {
+    const a = (A.items || {})[k], b = (B.items || {})[k];
+    if (!a || !b) { items[k] = a || b; continue; }
+    const n = (a.lastAt || 0) >= (b.lastAt || 0) ? a : b, o = n === a ? b : a;
+    items[k] = { ...o, ...n,
+      status: (RANK[o.status || ""] || 0) > (RANK[n.status || ""] || 0) ? o.status : n.status,
+      best: Math.max(a.best || 0, b.best || 0), bestG: Math.max(a.bestG || 0, b.bestG || 0),
+      attempts: Math.max(a.attempts || 0, b.attempts || 0), wrong: Math.max(a.wrong || 0, b.wrong || 0),
+      revealed: !!(a.revealed || b.revealed) };
+  }
+  const seen = new Set(), events = [];
+  for (const e of [...(A.events || []), ...(B.events || [])].sort((x, y) => (x.at || 0) - (y.at || 0))) {
+    const id = (e.at || 0) + "|" + (e.k || "") + "|" + (e.score ?? (e.revealed ? "r" : "w"));
+    if (!seen.has(id)) { seen.add(id); events.push(e); }
+  }
+  const cs = new Set(), cards = [];
+  for (const c of [...(A.cards || []), ...(B.cards || [])]) if (c && !cs.has(c.at)) { cs.add(c.at); cards.push(c); }
+  const card = [A.card, B.card].filter(Boolean).sort((x, y) => y.at - x.at)[0];
+  return { ...O, ...N, items, events: events.slice(-MAX_EVENTS), cards, watched: { ...(O.watched || {}), ...(N.watched || {}) },
+           ...(card ? { card } : {}) };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   유튜브 재생기 (웹판)
+   ─ 문장 시간(start/end, 단어 시간)은 '침묵을 잘라낸' 시간이다. 유튜브는 원래 시간.
+   ─ 문장마다 offset = origStart - start (문장 안에는 잘린 곳이 없다).
+   ─ YTAudio는 <audio>와 같은 모양(currentTime·play·pause·playbackRate·timeupdate)이라
+     나머지 코드는 그대로 쓴다. currentTime은 잘라낸 시간 기준.
+   ════════════════════════════════════════════════════════════════════ */
+/* 시간 대응표 M = [[원래 시작, 원래 끝, 잘라낸 시간에서의 시작], ...] (make_dictation의 segments, 소리 구간마다 한 줄)
+   잘린 침묵은 문장 앞뒤 여백 안에도 걸칠 수 있어서, 문장 단위가 아니라 이 표로 바꾼다. */
+function timeMap(S, M) {
+  if (M && M.length) return M;
+  if (!S.some(s => s.origStart != null)) return [[0, 1e9, 0]];          // 예전 영상: 잘라낸 곳 정보 없음 → 그대로
+  return S.map(s => [s.origStart ?? s.start, s.origEnd ?? s.end, s.start]); // 대응표가 없을 때: 문장마다 한 구간
+}
+function cutToOrig(S, t, M) {            // make_dictation.unmap
+  M = timeMap(S, M);
+  for (const [a, b, off] of M) if (t <= off + (b - a) + 1e-9) return a + Math.max(0, t - off);
+  return M[M.length - 1][1];
+}
+function origToCut(S, t, M) {            // make_dictation.remap
+  M = timeMap(S, M);
+  for (const [a, b, off] of M) if (t <= b + 1e-9) return off + Math.max(0, t - a);
+  const [a, b, off] = M[M.length - 1]; return off + (b - a);
+}
+const segOf = (M, ot) => { for (let g = 0; g < M.length; g++) if (ot < M[g][1] - 1e-3) return g; return M.length - 1; };
+const YT_RATES = [0.5, 0.75, 1];
+const snapRate = r => YT_RATES.reduce((a, b) => Math.abs(b - r) < Math.abs(a - r) ? b : a);
+class YTAudio extends EventTarget {
+  constructor(S, videoId, box, M) {
+    super();
+    this.S = S; this.M = timeMap(S, M); this.paused = true; this._rate = 1; this._t = 0; this.ready = false; this._want = false;
+    this.preservesPitch = true;
+    box.hidden = false;
+    const start = $y("ytStart");
+    const make = () => {
+      this.p = new YT.Player("ytFrame", {
+        videoId, playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1 },
+        events: {
+          onReady: () => { this.ready = true; start.hidden = !this._needTap(); this.p.setPlaybackRate(this._rate); this._seek(this._t); if (this._want) this.play(); this.dispatchEvent(new Event("ready")); },
+          onStateChange: e => {
+            const st = YT.PlayerState;
+            if (e.data === st.PLAYING) {
+              start.hidden = true;
+              if (this.paused && !this._want) this.dispatchEvent(new Event("nativeplay"));   // 플레이어 안의 ▶ → 지금 문장 재생
+            } else if ((e.data === st.PAUSED || e.data === st.ENDED) && !this.paused) {
+              this.pause();                                                                    // 플레이어 안의 ⏸ → 상태 맞추기
+              if (e.data === st.ENDED) this.dispatchEvent(new Event("ended"));
+            }
+          },
+          onError: e => {
+            this.pause();
+            const m = $y("ytErr"); m.hidden = false;
+            m.textContent = [101, 150, 100].includes(e.data) ? "이 영상은 지금 재생할 수 없어요 (유튜브에서 삭제됐거나 퍼가기가 막혔어요)" : "유튜브 재생 중 문제가 생겼어요. 새로고침해 주세요.";
+            this.dispatchEvent(new CustomEvent("error", { detail: e.data }));
+          },
+        },
+      });
+    };
+    start.onclick = () => { start.hidden = true; this.dispatchEvent(new Event("nativeplay")); };   // 첫 터치: 지금 문장 재생
+    if (window.YT && YT.Player) make();
+    else {
+      window.onYouTubeIframeAPIReady = make;
+      const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(sc);
+    }
+  }
+  _needTap() { return /iPhone|iPad|Android/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1); }
+  _seek(t) { const o = cutToOrig(this.S, t, this.M); this._g = segOf(this.M, o); if (this.ready) this.p.seekTo(o, true); }
+  get currentTime() { return this.ready ? origToCut(this.S, this.p.getCurrentTime(), this.M) : this._t; }
+  set currentTime(t) { this._t = t; this._seek(t); }
+  get playbackRate() { return this._rate; }
+  set playbackRate(r) { this._rate = snapRate(r); if (this.ready) this.p.setPlaybackRate(this._rate); }
+  play() {
+    this._want = true;
+    if (!this.ready) return Promise.resolve();
+    if (this.paused) { this.paused = false; this.dispatchEvent(new Event("play")); }
+    this.p.playVideo();
+    clearInterval(this._iv); this._iv = setInterval(() => this._tick(), 50);
+    return Promise.resolve();
+  }
+  pause() {
+    this._want = false; clearInterval(this._iv);
+    const was = this.paused; this.paused = true;        // 먼저 바꿔 둔다: pauseVideo가 바로 PAUSED를 알려 와도 되돌아오지 않게
+    if (this.ready) this.p.pauseVideo();
+    if (!was) this.dispatchEvent(new Event("pause"));
+  }
+  _tick() {
+    const M = this.M, ot = this.p.getCurrentTime();
+    let g = this._g ?? segOf(M, ot);
+    while (g + 1 < M.length && ot >= M[g + 1][0] - 1e-3) g++;     // 잘리지 않은 곳을 지나 다음 구간에 들어감
+    this._g = g;
+    if (ot >= M[g][1] - 1e-3) {
+      if (g + 1 < M.length) { this._g = g + 1; this.p.seekTo(M[g + 1][0], true); }   // 잘린 침묵 건너뛰기
+      else { this.pause(); this.dispatchEvent(new Event("ended")); }
+    }
+    this.dispatchEvent(new Event("timeupdate"));
+  }
+}
+function $y(id) { return document.getElementById(id); }
+
+/* ════════════════════════════════════════════════════════════════════
+   화면
+   ════════════════════════════════════════════════════════════════════ */
+function boot() {
+  if (!DATA) {
+    document.querySelector(".wrap").innerHTML =
+      "<h1>이 파일은 '틀(template)'이에요</h1><p class='meta'>그대로 열면 내용이 비어 있어요. " +
+      "make_dictation.py가 이 틀에 문장·음성을 채워서 결과 폴더에 index.html을 만들어 줍니다. 결과 폴더의 index.html을 여세요.</p>";
+    return;
+  }
+  const S = DATA.sentences;
+  const REVIEW = DATA.mode === "review";   // 복습 모음: 여러 영상의 문장을 모아 푸는 화면
+  const KEYS = REVIEW ? S.map(s => s.src.video + "|" + s.src.key) : sentenceKeys(S);
+  const LV = (() => { const v = +new URLSearchParams(location.search).get("lv"); return DATA.mode === "review" ? 5 : (v >= 1 && v <= 4 ? v : 5); })();
+  const BASE_VIDEO = DATA.videoId || ("title:" + DATA.title);
+  const VIDEO = LV < 5 ? `${BASE_VIDEO}~B${LV}` : BASE_VIDEO;   // 빈칸 단계마다 진도 따로
+  const SERVER = DATA.serverMode ? "" : "http://localhost:8765";   // 파일로 열었을 때도 서재가 켜져 있으면 연결
+  const $ = id => document.getElementById(id);
+  let audio = DATA.player === "youtube" ? new YTAudio(S, DATA.videoId, $("yt"), DATA.segments) : $("audio");
+  if (DATA.player === "youtube") audio.addEventListener("nativeplay", () => playCur());
+  const pool = {};   // 복습 모드: 음성 파일마다 재생기 하나씩 (Safari에서 누르자마자 재생되도록 미리 준비)
+  const audioFor = i => {
+    const u = S[i] && S[i].audioUrl;
+    if (!u) return $("audio");
+    if (!pool[u]) { const a = new Audio(); a.preload = "auto"; a.src = u; a.addEventListener("timeupdate", () => stopIfPast()); pool[u] = a; }
+    return pool[u];
+  };
+  if (REVIEW) S.forEach((_, i) => audioFor(i));
+
+  // ── 오디오 ──
+  // 서재(로컬 서버)에서 열면 음성 파일 주소로, 파일 하나로 열면 안에 넣어 둔 음성(base64)으로
+  if (DATA.player !== "youtube") try {
+    if (DATA.audioUrl && !AUDIO_B64) { audio.src = DATA.audioUrl; throw "skip"; }
+    if (!AUDIO_B64) throw "skip";   // 복습 모음: 문장마다 그 영상의 음성을 쓴다
+    const bin = atob(AUDIO_B64), buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    audio.src = URL.createObjectURL(new Blob([buf], { type: "audio/mp4" }));
+  } catch (e) { if (e !== "skip") console.error(e); }
+  const WEB = DATA.player === "youtube";
+  if (location.protocol.startsWith("http") && !WEB) $("libLink").hidden = false;   // 서재에서 열었을 때만
+  if (REVIEW) $("libLink").href = "/insights";
+
+  // ── 진도 불러오기 (+ 예전 버전 기록 자동 이전) ──
+  const blank = () => ({ schema: 2, video: VIDEO, title: DATA.title, cur: KEYS[0], speed: 1, items: {}, events: [] });
+  let P = REVIEW ? { ...blank(), items: DATA.reviewItems || {} }
+        : DATA.serverMode ? mergeProgress(DATA.serverProgress, Store.load(VIDEO))   // 서재 기록 + 이 브라우저에 남은 것
+        : Store.load(VIDEO);
+  let migratedMsg = "";
+  if (!P && !REVIEW && LV === 5) {
+    P = blank();
+    const legacy = Store.findLegacy(DATA.videoId || DATA.title, DATA.created);
+    if (legacy.length) {
+      const L = legacy[0];
+      const entries = Object.entries(L.state.items).map(([i, it]) => ({ pos: +i, text: L.exact ? S[+i]?.text : it.text, item: fromV1(it) }))
+        .filter(e => e.item.status || e.item.typed).sort((a, b) => a.pos - b.pos);
+      const r = L.exact
+        ? { items: Object.fromEntries(entries.filter(e => S[e.pos]).map(e => [KEYS[e.pos], e.item])), matched: entries.length, guessed: 0, lost: 0 }
+        : remapEntries(entries, S, KEYS, 0.5);
+      P.items = r.items; P.speed = L.state.speed || 1;
+      P.cur = KEYS[Math.min(L.state.idx || 0, S.length - 1)];
+      migratedMsg = `예전 진도를 옮겨 왔어요 (${r.matched + r.guessed}문장${r.lost ? `, 못 옮김 ${r.lost}` : ""})`;
+    }
+  }
+  P = P || blank();
+  P.events = P.events || [];
+  P.items = P.items || {};
+
+  /* ── 서재와 동기화 (B-1) ──
+     서재에서 열면: 바뀔 때마다 서재 기록(SQLite)에 저장. 이 브라우저에도 사본을 남김.
+     파일로 열면: 서재가 켜져 있는지 확인해서, 켜져 있으면 두 진도를 합치고 그 뒤로는 양쪽에 저장. */
+  const Sync = {
+    online: !!DATA.serverMode, cloud: false, needMerge: false, timer: null, sentEvents: P.events.length,
+    schedule() { if (!this.online && !this.cloud && !this.needMerge) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.push(), 500); },
+    push(keepalive = false) {
+      if (this.cloud || this.needMerge) { clearTimeout(this.timer); this.pushCloud(); return; }
+      if (!this.online) return;
+      clearTimeout(this.timer);
+      let url, body;
+      if (REVIEW) {
+        const fresh = P.events.slice(this.sentEvents); this.sentEvents = P.events.length;
+        url = SERVER + "/api/review/save"; body = { items: P.items, events: fresh };
+      } else {
+        url = SERVER + "/api/progress/" + encodeURIComponent(VIDEO); body = { folder: DATA.folder || null, data: P };
+      }
+      fetch(url, { method: REVIEW ? "POST" : "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), keepalive })
+        .then(r => { if (!r.ok) throw r.status; $("syncNote").textContent = "서재에 저장됨"; })
+        .catch(() => { $("syncNote").textContent = "서재에 저장 못 함 (서재가 꺼져 있나요?)"; });
+    },
+  };
+  /* 웹판: 계정에 저장. 로그인 직후 합치기가 실패했으면 먼저 합치기부터 다시. 저장은 늘 '읽고 → 합치고 → 쓰기' */
+  Sync.pushCloud = async function () {
+    const fail = "계정 저장 못 함 — 이 기기에는 저장됐고, 다음에 다시 보내요";
+    if (this.busy) { this.again = true; return; }
+    this.busy = true;
+    try {
+      if (this.needMerge) {
+        try { Store.save(VIDEO, P); await Cloud.mergeAll(mergeProgress); this.needMerge = false; this.cloud = true; }
+        catch (e) { $("syncNote").textContent = fail; return; }
+        P = mergeProgress(P, Store.load(VIDEO));
+      }
+      const m = await Cloud.sync(VIDEO, P, mergeProgress);
+      if (!m) { $("syncNote").textContent = fail; return; }
+      const cur = P.cur;
+      P = mergeProgress(P, m); P.cur = cur;      // 기다리는 동안 푼 것 + 다른 기기에서 푼 것
+      Store.save(VIDEO, P);
+      $("syncNote").textContent = "계정에 저장됨";
+    } finally {
+      this.busy = false;
+      if (this.again) { this.again = false; this.schedule(); }
+    }
+  };
+  addEventListener("pagehide", () => Sync.push(true));
+  const save = () => { if (!REVIEW) Store.save(VIDEO, P); Sync.schedule(); };
+  const item = i => (P.items[KEYS[i]] = P.items[KEYS[i]] || newItem());
+  const get = i => P.items[KEYS[i]] || {};
+  let idx = Math.max(0, KEYS.indexOf(P.cur));
+
+  // ── 헤더 ──
+  const fmt = s => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  $("title").textContent = DATA.title;
+  const cut = DATA.originalDuration - DATA.duration;
+  $("meta").innerHTML =
+    `문장 ${S.length}개 · 원래 ${fmt(DATA.originalDuration)} → ${fmt(DATA.duration)}` +
+    (DATA.cuts ? ` (말 없는 구간 ${DATA.cuts}곳, ${fmt(cut)} 컷)` : "") +
+    (DATA.wpm ? ` · 말 속도 분당 ${DATA.wpm}단어` : "") +
+    (DATA.url ? ` · <a href="${DATA.url}" target="_blank" rel="noopener">원본 영상</a>` : "");
+  $("tot").textContent = S.length;
+  if (REVIEW) {
+    const st = S.filter(s => s.why === "star").length;
+    $("meta").innerHTML = `모든 영상에서 모은 문장 ${S.length}개 · ★ 별표 ${st} · 최근 7일 2번 이상 틀림 ${S.length - st}` +
+      ` · 여기서 푼 결과는 원래 영상에도 반영돼요`;
+    document.querySelector(".tools").hidden = true;
+    if (!S.length) {
+      document.querySelector(".card").outerHTML = `<div class="card emptyrev">복습할 문장이 없어요 🎉<br><span>문장에 ★를 붙이거나, 같은 문장을 2번 이상 틀리면 여기에 모여요.</span></div>`;
+      $("dots").hidden = true; document.querySelector(".filters").hidden = true;
+    }
+  }
+  $("script").innerHTML = S.map(s => `<p><span>${s.id}</span>${esc(s.text)}${s.ko ? `<span class="sko">${esc(s.ko)}</span>` : ""}</p>`).join("");
+
+  function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  // ── 속도 ──
+  const SPEEDS = WEB ? YT_RATES : [0.6, 0.75, 0.9, 1];
+  if (WEB) P.speed = snapRate(P.speed || 1);
+  $("speeds").innerHTML = SPEEDS.map(v => `<button class="chip" data-v="${v}">${v}×</button>`).join("");
+  $("speeds").onclick = e => {
+    const v = e.target.dataset.v; if (!v) return;
+    P.speed = +v; save(); paintSpeed(); audio.playbackRate = P.speed;
+  };
+  function paintSpeed() { for (const b of $("speeds").children) b.classList.toggle("on", +b.dataset.v === P.speed); }
+
+  // ── 재생 (문장 구간만) ──
+  // 화면 갱신 주기(rAF)마다 확인 + 다른 탭으로 가도 멈추도록 timeupdate로 한 번 더 확인
+  let stopAt = null, raf = null;
+  const stopIfPast = () => { if (stopAt != null && audio.currentTime >= stopAt) { audio.pause(); stopAt = null; } };
+  audio.addEventListener("timeupdate", stopIfPast);
+  function playRange(a, b, i = idx) {
+    cancelAnimationFrame(raf);
+    audio.pause();
+    if (REVIEW) audio = audioFor(i);
+    audio.playbackRate = P.speed;
+    audio.preservesPitch = true;
+    audio.currentTime = a;
+    resumeTo(b);
+  }
+  function resumeTo(b) {   // 지금 위치에서 b초까지 재생
+    cancelAnimationFrame(raf);
+    stopAt = b;
+    audio.playbackRate = P.speed;
+    const p = audio.play(); if (p && p.catch) p.catch(() => {});
+    const tick = () => { stopIfPast(); if (stopAt != null) raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+  }
+  const playCur = () => playRange(S[idx].start, S[idx].end);
+  const playFromPrev = () => {
+    const p = Math.max(0, idx - 1);
+    if (REVIEW && S[p].audioUrl !== S[idx].audioUrl) return playCur();   // 다른 영상의 문장이면 이어 듣기 대신 현재 문장
+    playRange(S[p].start, S[idx].end);
+  };
+
+  // ── 채점 ── (계산은 위쪽 grade(), 여기서는 화면에 그리기만)
+  /* ── 구간 이어보기 (10문장씩) ──────────────────────────────────── */
+  const BLOCK = 10;
+  const blockOf = i => Math.floor(i / BLOCK);
+  const blockRange = b => [b * BLOCK, Math.min(S.length - 1, b * BLOCK + BLOCK - 1)];
+  function blockProgress(b) {
+    const [a, z] = blockRange(b); let d = 0;
+    for (let i = a; i <= z; i++) if (get(i).status) d++;
+    return [d, z - a + 1];
+  }
+  // 방금 이 문장으로 구간을 다 풀었으면 결과 아래에 '이어보기' 제안
+  function blockDoneBlock(before) {
+    if (REVIEW) return "";
+    const b = blockOf(idx), [d, n] = blockProgress(b), [a, z] = blockRange(b);
+    if (!(before < n && d === n)) return "";
+    return `<div class="blockdone">🎉 ${a + 1}~${z + 1}번 구간을 다 풀었어요!
+      <button class="btn primary" data-watch="${b}">🎬 이어서 들어 보기</button>
+      <button class="btn" data-report="${b}">📊 구간 분석</button></div>`;
+  }
+  /* ── 완료 카드 (모든 문장을 끝냈을 때) ─────────────────────────────
+     점수 규칙 (C단계 12번 제안과 같은 기준)
+     ─ 문장 점수 = (맞은 단어 − 없는 단어×0.5) ÷ 정답 단어 수, 가장 잘한 점수
+     ─ 정답을 본 적 있는 문장은 0점
+     ─ 영상 점수 = 문장 점수 평균 → S(아이콘) 95↑ / A(골드) 85↑ / B(실버) 70↑ / C(브론즈)
+  ──────────────────────────────────────────────────────────────── */
+  const TIERS = [[95, "icon", "ICON", "S"], [85, "gold", "GOLD", "A"], [70, "silver", "SILVER", "B"], [0, "bronze", "BRONZE", "C"]];
+  const GLOW = { icon: "#b9f5ff", gold: "#ffe08a", silver: "#e6ebf2", bronze: "#f0b37e" };
+  const doneAll = () => S.every((_, i) => get(i).status);
+  function cardStats() {
+    const its = S.map((_, i) => get(i));
+    const sc = its.map(it => it.revealed ? 0 : (it.bestG ?? it.best ?? 0));
+    const ovr = Math.round(sc.reduce((a, b) => a + b, 0) / S.length);
+    const [, tier, name, letter] = TIERS.find(t => ovr >= t[0]);
+    const pct = f => Math.round(its.filter(f).length / S.length * 100);
+    const times = P.events.map(e => e.at).filter(Boolean);
+    const days = times.length ? Math.max(1, Math.ceil((Date.now() - Math.min(...times)) / 86400000)) : 1;
+    return {
+      ovr, tier, name, letter, at: Date.now(),
+      stats: [
+        ["정확", ovr],
+        ["완벽", pct(it => it.status === "perfect" && !it.revealed)],
+        ["자력", pct(it => !it.revealed)],
+        ["도전", its.reduce((a, it) => a + (it.attempts || 0), 0)],
+        ["속도", DATA.wpm || 0],
+        ["기간", days],
+      ],
+      units: ["", "%", "%", "회", "wpm", "일"],
+    };
+  }
+  function fillCard(c) {
+    $("fc").className = "fc t-" + c.tier;
+    $("fcTier").textContent = c.name;
+    const [main, ...rest] = DATA.title.split(/\s+\|\s+/);   // "제목 | 연사 | 채널" → 제목 / 나머지
+    $("fcName").textContent = main; $("fcBy").textContent = rest.join(" · ");
+    $("fcStats").innerHTML = c.stats.map(([k, v], i) =>
+      `<div title="${k} ${v}${c.units[i]}"><b><em data-n="${v}">0</em>${c.units[i] ? `<small>${c.units[i]}</small>` : ""}</b><span>${k}</span></div>`).join("");
+    const d = new Date(c.at);
+    $("fcFoot").textContent = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} 완주 · ${S.length}문장`;
+    $("fcPic").innerHTML = DATA.videoId
+      ? `<img alt="" src="https://i.ytimg.com/vi/${encodeURIComponent(DATA.videoId)}/hqdefault.jpg" onerror="this.parentNode.textContent='🎬'">` : "🎬";
+    $("pkFlash").style.setProperty("--glow", GLOW[c.tier]);
+  }
+  function countUp() {
+    const els = [$("fcOvr"), ...$("fcStats").querySelectorAll("em")];
+    const t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      els.forEach(el => el.textContent = Math.round(+el.dataset.n * e));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  const reduced = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+  function openCard(withPack, record = true) {
+    const c = P.card && !withPack ? P.card : cardStats();
+    if (withPack && record) { P.card = c; (P.cards = P.cards || []).push(c); save(); paintCardBtn(); }   // 명예의 전당용 기록
+    fillCard(c);
+    $("fcOvr").dataset.n = c.ovr;
+    $("pack").hidden = false;
+    $("fcard").classList.remove("show"); $("pkPack").classList.remove("open"); $("pkFlash").classList.remove("go");
+    $("pkActions").hidden = true;
+    if (withPack && !reduced()) {
+      $("pkPack").hidden = false; $("pkHint").hidden = false; $("pkPack").focus();
+    } else revealCard(false);
+  }
+  function revealCard(anim = true) {
+    $("pkPack").classList.add("open"); $("pkHint").hidden = true;
+    if (anim) { $("pkFlash").classList.remove("go"); void $("pkFlash").offsetWidth; $("pkFlash").classList.add("go"); }
+    setTimeout(() => { $("pkPack").hidden = true; }, anim ? 550 : 0);
+    setTimeout(() => {
+      $("fcard").classList.add("show"); countUp();
+      setTimeout(() => { $("pkActions").hidden = false; $("pkClose").focus(); }, anim ? 900 : 0);
+    }, anim ? 260 : 0);
+  }
+  function closeCard() { $("pack").hidden = true; $("input").focus(); }
+  function paintCardBtn() {
+    $("cardBtn").hidden = !P.card;
+    $("cardPreview").hidden = !!P.card;   // 완주 전에만 미리보기
+    if (P.card) $("cardBtn").textContent = `🏆 완료 카드 (${P.card.letter} ${P.card.ovr})`;
+  }
+  $("pkPack").onclick = () => revealCard(true);
+  $("pkPack").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); revealCard(true); } };
+  $("pkClose").onclick = closeCard;
+  $("cardBtn").onclick = () => openCard(false);
+  $("cardPreview").onclick = () => openCard(true, false);
+  document.addEventListener("keydown", e => { if (!$("pack").hidden && e.key === "Escape") { e.preventDefault(); closeCard(); } });
+  // 채점·정답 보기 직후 호출: 방금 마지막 문장을 끝냈으면 팩 열기
+  function maybeFinish(wasAll) { if (!REVIEW && !wasAll && doneAll()) setTimeout(() => openCard(true), 700); }
+
+  /* ── 채점 분석 리포트 (C-2) ─────────────────────────────────────────
+     10문장 구간이 끝났을 때 / 영상을 완주했을 때 (언제든 📊 버튼으로)
+     ─ 점수: 완주 카드와 같은 기준 (가장 잘한 점수, 정답 본 문장 0점) → S/A/B/C
+     ─ 틀린 지점: 채점 기록(events)의 빠뜨린·틀린 단어를 유형으로 나눔 (규칙 기반, 무료·오프라인)
+     ─ 다음에 집중할 점: 가장 많은 유형 + 정답 보기·첫 시도 결과로 규칙에 따라 고름
+  ──────────────────────────────────────────────────────────────── */
+  const FUNC_W = new Set(("a an the to of in on at for from by with about into onto over under and or but so if as than that this these those " +
+    "is are was were be been being am do does did have has had it its i you he she we they me him her us them my your his our their " +
+    "not no can could will would shall should may might must there here what who whom which when where why how all some any").split(" "));
+  const LINK_KINDS = new Set(["link", "ed", "merge", "yod", "flap", "h", "reduce"]);
+  const CAT = {
+    func:    ["기능어를 빠뜨림", "a, the, to, of 같은 작은 단어는 약하게 발음돼서 잘 안 들려요."],
+    ending:  ["어미를 놓침", "-s, -ed, -ing 끝소리가 다음 단어에 묻혀 사라졌어요."],
+    spell:   ["들었지만 철자 틀림", "소리는 맞게 들었어요. 철자만 달라요."],
+    link:    ["축약·연음 구간", "단어끼리 붙거나 줄어든 소리(they're, want to, cried in)에서 놓쳤어요."],
+    unheard: ["아예 못 들음", "내용어를 놓쳤어요. 모르는 단어였거나, 알지만 소리로 못 알아들은 경우예요."],
+  };
+  const lev = (a, b) => {
+    if (Math.abs(a.length - b.length) > 3) return 9;
+    let prev = [...Array(b.length + 1).keys()];
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      for (let j = 1; j <= b.length; j++) cur.push(Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] !== b[j - 1])));
+      prev = cur;
+    }
+    return prev[b.length];
+  };
+  const stem = w => { for (const e of ["ing", "ed", "es", "s", "d"]) if (w.endsWith(e) && w.length - e.length >= 2) return w.slice(0, -e.length); return w; };
+  let strongLink = new Set();
+  function classifyMiss(expected, typed, linkWords) {
+    const e = (tokens(expected)[0] || ""); if (!e) return null;
+    if (e.includes("'")) return "link";
+    const t = typed == null ? null : (tokens(typed)[0] || "");
+    if (t != null && t !== e && stem(t) === stem(e)) return "ending";
+    if (t != null && lev(t, e) <= (e.length <= 6 ? 2 : 3)) return "spell";
+    // 작은 단어(an, of…)는 연음에 걸려도 '기능어'로, 줄임말·y연음·-ed처럼 소리가 바뀌는 곳만 '연음'으로
+    if (FUNC_W.has(e)) return strongLink.has(e) ? "link" : "func";
+    if (linkWords.has(e)) return "link";
+    return "unheard";
+  }
+  function sentScore(it) { return it.revealed ? 0 : (it.bestG ?? it.best ?? 0); }
+
+  function buildReport(a, z) {
+    const keyIdx = {}; for (let i = a; i <= z; i++) keyIdx[KEYS[i]] = i;
+    const evs = P.events.filter(e => e.k in keyIdx);
+    const first = {}, tries = {};
+    for (const e of evs) if ("score" in e) { if (!(e.k in first)) first[e.k] = e.score; tries[e.k] = (tries[e.k] || 0) + 1; }
+    const rows = [];
+    for (let i = a; i <= z; i++) {
+      const it = get(i);
+      if (!it.status) continue;
+      rows.push({ i, score: sentScore(it), first: first[KEYS[i]], revealed: !!it.revealed, star: !!it.star, tries: tries[KEYS[i]] || 0 });
+    }
+    const n = rows.length;
+    const ovr = n ? Math.round(rows.reduce((s, r) => s + r.score, 0) / n) : 0;
+    const tier = TIERS.find(t => ovr >= t[0]);
+    // 틀린 지점 분류
+    const cats = {}, words = {};
+    for (const e of evs) {
+      if (!("score" in e)) continue;
+      const s = S[keyIdx[e.k]], W = display(s.text);
+      const tw = kinds => new Set((s.tips || []).filter(t => kinds.has(t.kind)).flatMap(t => t.w.map(i => (tokens(W[i] || "")[0] || ""))));
+      const linkWords = tw(LINK_KINDS);
+      strongLink = tw(new Set(["reduce", "yod", "ed"]));
+      const add = (exp, typed) => {
+        const c = classifyMiss(exp, typed, linkWords); if (!c) return;
+        const k = exp.toLowerCase() + "|" + (typed || "");
+        (cats[c] = cats[c] || { n: 0, ex: {} }).n++;
+        const x = cats[c].ex[k] = cats[c].ex[k] || { exp, typed, n: 0, i: keyIdx[e.k] }; x.n++;
+        if (c !== "func") words[exp.toLowerCase()] = (words[exp.toLowerCase()] || 0) + 1;
+      };
+      (e.miss || []).forEach(w => add(w, null));
+      (e.sub || []).forEach(([t, w]) => add(w, t));
+    }
+    const total = Object.values(cats).reduce((s, c) => s + c.n, 0);
+    const catList = Object.entries(cats).sort((x, y) => y[1].n - x[1].n).map(([id, c]) => ({
+      id, name: CAT[id][0], why: CAT[id][1], n: c.n, pct: Math.round(c.n / total * 100),
+      ex: Object.values(c.ex).sort((p, q) => q.n - p.n).slice(0, 4),
+    }));
+    const firstOk = rows.filter(r => r.first === 100).length;
+    const revealed = rows.filter(r => r.revealed).length;
+    const retry = rows.filter(r => r.score < 100).sort((p, q) => p.score - q.score || q.tries - p.tries).slice(0, 4);
+    // 다음에 집중할 점 (규칙)
+    const focus = [];
+    const top = catList[0] && catList[0].id;
+    if (n && ovr >= 95 && firstOk / n >= 0.8) focus.push("이 구간은 거의 완벽해요. 다음 구간은 <b>1×</b> 속도 그대로 바로 도전해 보세요.");
+    if (top === "func") focus.push("작은 단어(a, the, to, of)를 놓치는 편이에요. 다음 구간은 <b>0.75×</b>로 듣고, 문장마다 <b>관사·전치사 개수</b>를 먼저 세어 본 뒤 써 보세요.");
+    if (top === "ending") focus.push("끝소리(-s, -ed)를 놓쳐요. 쓰기 전에 <b>시제(과거?)와 단·복수</b>를 문법으로 한 번 더 확인하는 습관을 들여 보세요.");
+    if (top === "spell") focus.push(`소리는 잘 들려요. 철자가 틀린 단어(${catList[0].ex.slice(0, 3).map(x => esc(x.exp)).join(", ")})를 채점 결과에서 눌러 <b>단어장</b>에 담아 두세요.`);
+    if (top === "link") focus.push("붙어서 들리는 소리에서 놓쳐요. 결과 아래 <b>학습 설명의 🔗 표시</b>를 보고, <b>Shift+Tab</b>(앞 문장부터 이어 듣기)으로 흐름 속에서 다시 들어 보세요.");
+    if (top === "unheard") focus.push("모르는 단어가 걸림돌이에요. 놓친 단어를 채점 결과에서 눌러 <b>단어장</b>에 담고, 뜻을 알고 나서 다시 들어 보세요.");
+    if (revealed >= 3 || (n && revealed / n >= 0.3)) focus.push(`정답 보기를 ${revealed}번 눌렀어요. 다음엔 정답 보기 전에 <b>0.6×</b>로 한 번, <b>첫 글자 힌트</b>로 한 번 더 시도해 보세요.`);
+    if (n && ovr < 70 && !focus.some(f => f.includes("0.75"))) focus.push("이 구간은 지금 수준보다 빨라요. <b>0.75×</b>로 먼저 끝까지 풀고, 다시 1×로 풀어 보세요.");
+    if (retry.length && !focus.length) focus.push("아래 '다시 풀어 볼 문장'만 한 번 더 풀어 보세요.");
+    // 구간별 막대 (전체 리포트에서만)
+    const blocks = [];
+    if (z - a + 1 > BLOCK) for (let b = blockOf(a); b <= blockOf(z); b++) {
+      const [ba, bz] = blockRange(b), rs = rows.filter(r => r.i >= ba && r.i <= bz);
+      blocks.push({ b, a: ba, z: bz, n: rs.length, score: rs.length ? Math.round(rs.reduce((s, r) => s + r.score, 0) / rs.length) : null });
+    }
+    return { a, z, n, ovr, tier, firstOk, revealed, checks: evs.filter(e => "score" in e).length, cats: catList, retry, focus, blocks,
+             words: Object.entries(words).sort((p, q) => q[1] - p[1]).slice(0, 8) };
+  }
+
+  function openReport(a, z) {
+    const R = buildReport(a, z), whole = z - a + 1 > BLOCK;
+    $("rpTitle").textContent = whole ? "📊 전체 분석" : `📊 ${a + 1}~${z + 1}번 구간 분석`;
+    if (!R.n) { $("rpBody").innerHTML = `<p class="muted">아직 푼 문장이 없어요. 문장을 풀면 분석이 쌓여요.</p>`; $("report").hidden = false; return; }
+    const [, tid, tname, letter] = R.tier;
+    const go = i => `<button class="linkbtn" data-goto="${i}">${i + 1}번</button>`;
+    $("rpBody").innerHTML = `
+      <div class="rp-top">
+        <div class="rp-score t-${tid}"><b>${R.ovr}</b><span>${letter} · ${tname}</span></div>
+        <div class="rp-stats">
+          <div><b>${R.n}</b>/${R.z - R.a + 1}<span>푼 문장</span></div>
+          <div><b>${R.firstOk}</b><span>처음에 바로 완벽</span></div>
+          <div><b>${R.revealed}</b><span>정답 본 문장</span></div>
+          <div><b>${R.checks}</b><span>채점 횟수</span></div>
+        </div>
+      </div>
+      <p class="rp-rule">점수 = 문장마다 가장 잘한 점수의 평균 (없는 단어는 0.5개씩 감점, 정답 본 문장은 0점) · S 95↑ A 85↑ B 70↑ C</p>
+      ${R.blocks.length ? `<h4>구간별 점수</h4><div class="rp-bars">${R.blocks.map(b => `<button class="rp-bar" data-rblock="${b.b}" title="${b.a + 1}~${b.z + 1}번 · ${b.n}문장 풀었음">
+          <i style="height:${b.score == null ? 0 : Math.max(4, b.score)}%" class="${b.score == null ? "" : b.score >= 95 ? "s" : b.score >= 85 ? "a" : b.score >= 70 ? "b" : "c"}"></i><span>${b.a + 1}</span></button>`).join("")}</div>` : ""}
+      <h4>다음에 집중할 점</h4>
+      <ul class="rp-focus">${R.focus.map(f => `<li>${f}</li>`).join("") || "<li>잘하고 있어요. 그대로 다음 구간으로!</li>"}</ul>
+      <h4>자주 틀린 지점과 이유</h4>
+      ${R.cats.length ? R.cats.map(c => `<div class="rp-cat"><div class="rp-ch"><b>${esc(c.name)}</b><span>${c.n}번 · ${c.pct}%</span></div>
+          <div class="rp-cb"><i style="width:${c.pct}%"></i></div><div class="rp-why">${esc(c.why)}</div>
+          <div class="rp-ex">${c.ex.map(x => `<span>${x.typed ? `<del>${esc(x.typed)}</del> → ` : "(빠뜨림) "}<b>${esc(x.exp)}</b>${x.n > 1 ? ` ×${x.n}` : ""} ${go(x.i)}</span>`).join("")}</div></div>`).join("")
+        : `<p class="muted small">틀린 기록이 없어요 👏</p>`}
+      ${R.retry.length ? `<h4>다시 풀어 볼 문장</h4><ul class="rp-retry">${R.retry.map(r => `<li>${go(r.i)} <span class="small">${r.revealed ? "정답 봄" : r.score + "점"}${r.tries > 1 ? ` · ${r.tries}번 채점` : ""}</span>
+          <span class="rp-txt">${esc(S[r.i].text)}</span>${r.star ? "" : `<button class="linkbtn" data-rstar="${r.i}">★ 붙이기</button>`}</li>`).join("")}</ul>` : ""}
+      ${!whole && blockProgress(blockOf(a))[0] === blockProgress(blockOf(a))[1] ? `<div class="rp-act"><button class="btn primary" data-watch="${blockOf(a)}">🎬 이 구간 이어서 들어 보기</button></div>` : ""}`;
+    $("report").hidden = false;
+    $("rpClose").focus();
+  }
+  function closeReport() { $("report").hidden = true; $("input").focus(); }
+  $("rpClose").onclick = closeReport;
+  $("report").addEventListener("click", e => {
+    if (e.target === $("report")) return closeReport();
+    const g = e.target.closest("[data-goto]"); if (g) { closeReport(); go(+g.dataset.goto); return; }
+    const s = e.target.closest("[data-rstar]");
+    if (s) { const it = item(+s.dataset.rstar); it.star = true; it.starOff = false; save(); paintDots(); paintCard(); s.replaceWith("★"); return; }
+    const w = e.target.closest("[data-watch]"); if (w) { closeReport(); openPlayer(+w.dataset.watch); return; }
+    const rb = e.target.closest("[data-rblock]"); if (rb) { const [ba, bz] = blockRange(+rb.dataset.rblock); openReport(ba, bz); }
+  });
+  document.addEventListener("keydown", e => { if (!$("report").hidden && e.key === "Escape") { e.preventDefault(); closeReport(); } });
+  $("reportBtn").onclick = () => { const [a, z] = blockRange(blockOf(idx)); openReport(a, z); };
+  $("reportAll").onclick = () => openReport(0, S.length - 1);
+  $("pkReport").onclick = () => { closeCard(); openReport(0, S.length - 1); };
+  $("result").addEventListener("click", e => { const r = e.target.closest("[data-report]"); if (r) { const [a, z] = blockRange(+r.dataset.report); openReport(a, z); } });
+
+  function paintWatch() {
+    if (REVIEW) { $("watchBtn").hidden = true; $("reportBtn").hidden = true; return; }
+    const b = blockOf(idx), [d, n] = blockProgress(b), [a, z] = blockRange(b);
+    const seen = (P.watched || {})[b];
+    const btn = $("watchBtn");
+    btn.dataset.b = b;
+    btn.classList.toggle("locked", d < n);
+    btn.classList.toggle("watched", !!seen);
+    btn.textContent = `🎬 ${a + 1}~${z + 1} 이어보기` + (d < n ? ` (${d}/${n})` : seen ? " ✓" : "");
+    const left = []; for (let i = a; i <= z; i++) if (!get(i).status) left.push(i + 1);
+    btn.title = d < n ? `남은 문장: ${left.join(", ")}번 — 누르면 그 문장으로 가요` : "이 구간을 자막과 함께 이어서 들어요";
+    $("reportBtn").textContent = `📊 ${a + 1}~${z + 1} 분석`;
+  }
+
+  let pl = null;   // 열려 있는 구간 플레이어 상태
+  const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+  const PLAYI = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  // 단어 시간이 문장 글자와 맞을 때만 단어 강조(노래방)를 한다 (sentences.json을 손으로 고쳤으면 문장 단위로)
+  const wordsOk = s => s.words && coreTokens(s.words.map(w => w[0]).join(" ")).join(" ") === coreTokens(s.text).join(" ");
+
+  function openPlayer(b) {
+    const [a, z] = blockRange(b);
+    pl = { b, a, z, k: -1, ended: false };
+    $("plTitle").textContent = `🎬 ${a + 1}~${z + 1}번 구간 이어보기`;
+    const hasKo = S.slice(a, z + 1).some(s => s.ko);
+    $("plKoTog").checked = hasKo && !!P.showKoSub;
+    $("plKoTog").disabled = !hasKo;
+    $("plKoTog").parentElement.title = hasKo ? "" : "이 영상에는 해석이 아직 없어요";
+    $("plDone").textContent = "";
+    $("player").hidden = false;
+    audio.currentTime = S[a].start;
+    showLine(a);
+    playRange(S[a].start, S[z].end);
+    $("plPlay").focus();
+    plLoop();
+  }
+  function closePlayer() {
+    if (!pl) return;
+    cancelAnimationFrame(pl.raf); audio.pause(); stopAt = null;
+    pl = null; $("player").hidden = true; paintWatch(); $("input").focus();
+  }
+  function plToggle() {
+    if (!pl) return;
+    if (!audio.paused) { audio.pause(); return; }
+    const endT = S[pl.z].end;
+    if (pl.ended || audio.currentTime >= endT - 0.05 || audio.currentTime < S[pl.a].start - 0.05) {
+      pl.ended = false; $("plDone").textContent = ""; playRange(S[pl.a].start, endT);
+    } else resumeTo(endT);
+  }
+  function showLine(k) {
+    pl.k = k;
+    const s = S[k];
+    $("plCur").innerHTML = wordsOk(s)
+      ? s.words.map(w => `<span class="wd"${isFiller(w[0]) ? " data-f" : ""}>${esc(w[0])}</span>`).join(" ")
+      : `<span class="wd done">${esc(s.text)}</span>`;
+    $("plPrev").textContent = k > pl.a ? S[k - 1].text : "";
+    $("plNext").textContent = k < pl.z ? S[k + 1].text : "";
+    const showKo = $("plKoTog").checked && s.ko;
+    $("plKo").textContent = showKo ? s.ko : ""; $("plKo").hidden = !showKo;
+  }
+  function plLoop() {
+    if (!pl) return;
+    const t = audio.currentTime, a0 = S[pl.a].start, z1 = S[pl.z].end;
+    let k = pl.a;
+    for (let i = pl.a; i <= pl.z; i++) if (S[i].start <= t + 0.02) k = i;
+    if (k !== pl.k) showLine(k);
+    const s = S[k];
+    if (wordsOk(s)) $("plCur").querySelectorAll(".wd").forEach((sp, j) => {
+      const w = s.words[j];
+      sp.classList.toggle("done", t >= w[2]);
+      sp.classList.toggle("now", t >= w[1] && t < w[2]);
+    });
+    $("plBar").style.width = Math.min(100, Math.max(0, (t - a0) / (z1 - a0) * 100)) + "%";
+    $("plTime").textContent = `${k + 1}번 · ${fmt(Math.max(0, t - a0))} / ${fmt(z1 - a0)}`;
+    const playing = !audio.paused;
+    if ($("plPlay").dataset.state !== String(playing)) { $("plPlay").innerHTML = playing ? PAUSE : PLAYI; $("plPlay").dataset.state = String(playing); }
+    if (!playing && !pl.ended && t >= z1 - 0.12) {   // 끝까지 들음 → 기록
+      pl.ended = true;
+      P.watched = P.watched || {}; P.watched[pl.b] = Date.now();
+      P.events.push({ at: Date.now(), watched: [pl.a + 1, pl.z + 1] });
+      save();
+      $("plDone").textContent = "✓ 끝까지 들었어요 · ▶로 다시 듣기";
+    }
+    pl.raf = requestAnimationFrame(plLoop);
+  }
+  $("plPlay").onclick = plToggle;
+  $("plClose").onclick = closePlayer;
+  $("player").addEventListener("click", e => { if (e.target === $("player")) closePlayer(); });
+  $("plKoTog").onchange = () => { P.showKoSub = $("plKoTog").checked; save(); if (pl) showLine(pl.k); $("plPlay").focus(); };
+  document.addEventListener("keydown", e => {
+    if (!pl) return;
+    if (e.key === "Escape") { e.preventDefault(); closePlayer(); }
+    else if (e.key === " " && e.target.tagName !== "INPUT") { e.preventDefault(); plToggle(); }
+  });
+  $("watchBtn").onclick = () => {
+    const b = +$("watchBtn").dataset.b, [d, n] = blockProgress(b), [a, z] = blockRange(b);
+    if (d === n) return openPlayer(b);
+    const left = []; for (let i = a; i <= z; i++) if (!get(i).status) left.push(i);
+    toast(`아직 안 푼 문장: ${left.map(i => i + 1).join(", ")}번 — ${left[0] + 1}번으로 갈게요`, 3500);
+    go(left[0]);
+  };
+  $("result").addEventListener("click", e => { const w = e.target.closest("[data-watch]"); if (w) openPlayer(+w.dataset.watch); });
+
+  // 해석: 채점하거나 정답을 본 뒤에만 보인다. 켜 두면 다음 문장에서도 자동으로 펼쳐짐.
+  function koBlock() {
+    const ko = S[idx].ko;
+    if (!ko) return "";
+    return `<div class="korow"><button class="kobtn${P.showKo ? " on" : ""}" data-ko>${P.showKo ? "해석 숨기기" : "해석 보기"}</button>` +
+           `<div class="ko"${P.showKo ? "" : " hidden"}>${esc(ko)}</div></div>`;
+  }
+  $("result").addEventListener("click", e => {
+    if (!e.target.closest("[data-ko]")) return;
+    P.showKo = !P.showKo; save();
+    const b = $("result").querySelector("[data-ko]"), k = $("result").querySelector(".ko");
+    b.classList.toggle("on", P.showKo); b.textContent = P.showKo ? "해석 숨기기" : "해석 보기"; k.hidden = !P.showKo;
+    $("input").focus();
+  });
+
+  /* ── 학습 설명 (C-1): 발음 포인트(규칙으로 자동) + 문법 노트(notes.txt) ──
+     채점 뒤: 내가 틀린 단어에 걸친 포인트를 먼저 강조, 나머지는 '전체 보기'.
+     약형(a, the, to…)은 그 단어를 틀렸을 때만 보여 준다. */
+  const KIND_ICON = { link: "🔗", ed: "🔗", merge: "🔗", yod: "🔗", flap: "🌀", h: "🌀", reduce: "✂️", silent: "🔇", weak: "🔉" };
+  function tipsBlock(seq) {
+    const s = S[idx], words = display(s.text), notes = s.notes || [];
+    const missed = new Set((seq || []).filter(o => o.t === "miss" || o.t === "sub").map(o => o.wi));
+    const all = (s.tips || []).filter(t => !t.onlyIfMissed || t.w.some(i => missed.has(i)));
+    if (!all.length && !notes.length) return "";
+    const near = seq ? all.filter(t => t.w.some(i => missed.has(i))) : [];
+    const rest = all.filter(t => !near.includes(t));
+    const li = (t, hot) => `<li class="tip${hot ? " hot" : ""}"><span class="ti">${KIND_ICON[t.kind] || "•"}</span>` +
+      `<b>${esc(t.w.map(i => words[i]).join(" "))}</b>` + (t.say && t.kind !== "silent" ? ` <span class="say">→ ${esc(t.say)}</span>` : "") +
+      ` <span class="tl">${esc(t.label)}</span><div class="tn">${esc(t.note)}</div></li>`;
+    const open = !P.hideTips;
+    return `<div class="tips"><button class="kobtn${open ? " on" : ""}" data-tips>${open ? "학습 설명 접기" : "학습 설명 보기"}` +
+      `${near.length ? ` · 틀린 곳 ${near.length}` : ""}</button><div class="tipbody"${open ? "" : " hidden"}>` +
+      (notes.length ? `<ul class="notes">${notes.map(n => `<li>📘 ${esc(n)}</li>`).join("")}</ul>` : "") +
+      (near.length ? `<div class="tiph">내가 틀린 곳의 발음</div><ul class="tiplist">${near.map(t => li(t, true)).join("")}</ul>` : "") +
+      (rest.length ? (near.length || notes.length
+          ? `<details class="tipmore"><summary>이 문장의 발음 포인트 전체 보기 (${rest.length})</summary><ul class="tiplist">${rest.map(t => li(t)).join("")}</ul></details>`
+          : `<ul class="tiplist">${rest.map(t => li(t)).join("")}</ul>`) : "") +
+      `</div></div>`;
+  }
+  $("result").addEventListener("click", e => {
+    if (!e.target.closest("[data-tips]")) return;
+    P.hideTips = !P.hideTips; save();
+    const b = $("result").querySelector("[data-tips]"), body = $("result").querySelector(".tipbody");
+    body.hidden = P.hideTips; b.classList.toggle("on", !P.hideTips);
+    b.textContent = b.textContent.replace(/^학습 설명 (접기|보기)/, P.hideTips ? "학습 설명 보기" : "학습 설명 접기");
+    $("input").focus();
+  });
+
+  let lastSeq = [];
+  function renderGrade(seq) {
+    lastSeq = seq;
+    const W = (o, i, cls, inner, title) => `<span class="w ${cls}" data-si="${i}" title="${title}${canWords() ? " · 누르면 단어장에 담겨요" : ""}">${inner}</span>`;
+    return seq.map((o, i) =>
+      o.t === "filler" ? `<span class="w filler" title="말버릇 — 안 써도 돼요">${esc(o.w)}</span>` :
+      o.t === "ok" ? W(o, i, o.given ? "given" : "ok", esc(o.w), o.given ? "주어진 단어" : "맞음") + (o.alt ? `<span class="alt" title="이렇게 써도 정답">= ${esc(o.alt)}</span>` : "") :
+      o.t === "miss" ? W(o, i, "miss", esc(o.w), "빠뜨린 단어") :
+      o.t === "extra" ? `<span class="w extra" title="없는 단어">${esc(o.w)}</span>` :
+      W(o, i, "sub", `<del>${esc(o.typed)}</del><ins>${esc(o.w)}</ins>`, "틀린 단어")
+    ).join(" ") + (canWords() ? `<div class="wordhint">단어를 누르면 단어장에 담겨요</div>` : "");
+  }
+  const canWords = () => Sync.online && !WEB;
+  async function addWord(si) {
+    const o = lastSeq[si]; if (!o || !o.w) return;
+    const lw = o.w.toLowerCase();
+    const nth = lastSeq.slice(0, si).filter(x => x.t !== "extra" && x.t !== "filler" && (x.w || "").toLowerCase() === lw).length;
+    const s = S[idx], src = s.src || {};
+    try {
+      const r = await fetch(SERVER + "/api/words", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ surface: o.w, sentence: s.text, nth, video: src.video || VIDEO, folder: src.folder || DATA.folder || null,
+                               key: src.key || KEYS[idx], no: src.no || idx + 1 }) });
+      if (!r.ok) throw r.status;
+      const w = await r.json();
+      document.querySelector(`#result .w[data-si="${si}"]`)?.classList.add("saved");
+      toast(`📒 ${w.lemma} (${w.pos_ko}) 단어장에 담았어요` + (w.forms && w.forms.past ? ` · ${w.forms.base}–${w.forms.past}–${w.forms.pp}` : ""), 3000);
+    } catch (e) { toast("단어를 담지 못했어요. 서재가 켜져 있는지 확인해 주세요"); }
+    $("input").focus();
+  }
+  $("result").addEventListener("click", e => {
+    const w = e.target.closest(".w[data-si]");
+    if (w && canWords()) addWord(+w.dataset.si);
+  });
+
+  /* ── 빈칸 사다리 (C): 원본 사람 목소리 그대로, 빈칸 수로 난이도 조절 ─────────────
+     Lv.1 핵심 단어 1~2개 · Lv.2 내용어 절반 · Lv.3 내용어 전부 · Lv.4 + 기능어 절반 · Lv.5 문장 통째로(기본)
+     진도는 단계마다 따로 (영상ID~B1 …). 채점 기록 형식은 같아서 분석·별표·카드가 그대로 동작한다. */
+  function blanksFor(i) {
+    const s = S[i], W = display(s.text);
+    let order = s.blank;
+    if (!order) {   // 예전 페이지: 긴 내용어부터
+      order = W.map((w, k) => [k, w]).filter(([, w]) => !isFiller(w))
+        .sort((a, b) => (FUNC_W.has(a[1].toLowerCase()) - FUNC_W.has(b[1].toLowerCase())) || b[1].length - a[1].length).map(x => x[0]);
+    }
+    const content = order.filter(k => !FUNC_W.has((W[k] || "").toLowerCase())).length;
+    const func = order.length - content;
+    const n = LV === 1 ? (order.length >= 14 ? 2 : 1) : LV === 2 ? Math.max(2, Math.ceil(content / 2))
+            : LV === 3 ? Math.max(2, content) : content + Math.ceil(func / 2);
+    return new Set(order.slice(0, Math.min(n, order.length)));
+  }
+  let CZ = null;   // 지금 문장의 빈칸 { W, blanks:Set, inputs:[] }
+  function renderCloze(i, saved) {
+    const W = display(S[i].text), B = blanksFor(i);
+    let answers = []; try { answers = JSON.parse(saved || "[]"); } catch (e) {}
+    let n = 0;
+    $("cloze").innerHTML = W.map((w, k) => {
+      if (!B.has(k)) return `<span class="cz-w">${esc(w)}</span>`;
+      const v = answers[n++] || "";
+      return `<input class="cz-in" data-k="${k}" value="${esc(v)}" size="${Math.max(3, w.length + 1)}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="빈칸">`;
+    }).join(" ");
+    CZ = { W, B, inputs: [...$("cloze").querySelectorAll(".cz-in")] };
+    CZ.inputs.forEach((inp, j) => {
+      inp.addEventListener("input", () => { checked = false; inp.size = Math.max(3, inp.value.length + 1, (CZ.W[+inp.dataset.k] || "").length + 1); });
+      inp.addEventListener("keydown", e => {
+        if (e.isComposing) return;
+        if (e.key === "Tab") { e.preventDefault(); e.shiftKey ? playFromPrev() : playCur(); }
+        else if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          if (checked) return step(1);
+          if (j < CZ.inputs.length - 1) CZ.inputs[j + 1].focus(); else check();
+        } else if (e.key === " " && inp.value.trim() && j < CZ.inputs.length - 1) { e.preventDefault(); CZ.inputs[j + 1].focus(); }
+        else if (e.key === "Backspace" && !inp.value && j > 0) { e.preventDefault(); CZ.inputs[j - 1].focus(); }
+      });
+    });
+  }
+  const clozeTyped = () => JSON.stringify(CZ.inputs.map(x => x.value.trim()));
+  function focusInput() {
+    if (LV < 5 && CZ && CZ.inputs.length) (CZ.inputs.find(x => !x.value) || CZ.inputs[0]).focus();
+    else $("input").focus();
+  }
+  // 빈칸 채점: 빈칸마다 grade()로 비교 (축약형 규칙도 그대로). 보이는 단어는 'given'
+  function gradeCloze() {
+    const seq = [];
+    let ok = 0, total = 0, extra = 0;
+    CZ.W.forEach((w, k) => {
+      if (isFiller(w)) { seq.push({ t: "filler", w, wi: k }); return; }
+      if (!CZ.B.has(k)) { seq.push({ t: "ok", w, wi: k, given: true }); return; }
+      total++;
+      const v = CZ.inputs.find(x => +x.dataset.k === k).value.trim();
+      if (!v) { seq.push({ t: "miss", w, wi: k }); return; }
+      const g = grade(w, v);
+      if (g.ok === g.total && !g.extra) { ok++; seq.push({ t: "ok", w, wi: k, alt: g.seq[0] && g.seq[0].alt }); }
+      else seq.push({ t: "sub", w, wi: k, typed: v });
+    });
+    return { seq, ok, total, extra };
+  }
+  function paintLevels() {
+    if (REVIEW) { $("lvRow").hidden = true; return; }
+    $("lvRow").innerHTML = `<span class="lvlab">빈칸 단계</span>` + [1, 2, 3, 4, 5].map(l =>
+      `<button class="chip lv${l === LV ? " on" : ""}" data-lv="${l}" title="${LV_HELP[l]}">${l === 5 ? "Lv.5 전체" : "Lv." + l}</button>`).join("") +
+      `<span class="lvnote">${LV_HELP[LV]}</span>`;
+  }
+  const LV_HELP = { 1: "핵심 단어 1~2개만 빈칸", 2: "중요한 단어 절반이 빈칸", 3: "내용어가 모두 빈칸", 4: "내용어 + 작은 단어 절반이 빈칸", 5: "문장 통째로 받아쓰기" };
+  $("lvRow").addEventListener("click", e => {
+    const b = e.target.closest("[data-lv]"); if (!b || +b.dataset.lv === LV) return;
+    if (ready) { item(idx).typed = LV < 5 && CZ ? clozeTyped() : $("input").value; save(); Sync.push(true); }
+    const u = new URL(location.href);
+    if (+b.dataset.lv === 5) u.searchParams.delete("lv"); else u.searchParams.set("lv", b.dataset.lv);
+    u.hash = ""; location.href = u.toString();
+  });
+
+  function check() {
+    if (LV < 5) return checkCloze();
+    const s = S[idx], it = item(idx);
+    it.typed = $("input").value;
+    const typed = coreTokens(it.typed);
+    if (!typed.length) { $("input").focus(); return; }
+    const d = grade(s.text, it.typed);
+    const blockBefore = blockProgress(blockOf(idx))[0], wasAll = doneAll();
+    const pct = d.total ? Math.round((d.ok / d.total) * 100) : 100;
+    const perfect = d.ok === d.total && d.extra === 0;
+
+    // 기록 남기기
+    const norm = typed.join(" ");
+    it.attempts++; it.lastAt = Date.now(); it.best = Math.max(it.best || 0, pct);
+    const gpct = d.total ? Math.max(0, Math.round((d.ok - 0.5 * d.extra) / d.total * 100)) : 100;   // 카드용: 없는 단어 감점
+    it.bestG = Math.max(it.bestG || 0, gpct);
+    if (!perfect && norm !== it.lastWrong) {   // 같은 답으로 다시 채점하면 안 셈
+      it.wrong++; it.lastWrong = norm;
+      if (it.wrong >= STAR_AUTO && !it.star && !it.starOff) {   // 직접 해제한 문장은 다시 안 붙임
+        it.star = true; setTimeout(() => toast(`${STAR_AUTO}번 틀려서 별표를 붙였어요 ★ 나중에 다시 풀어 봐요`, 3500), 50);
+      }
+    }
+    // 정답을 봤던 문장도 다시 풀면 색이 바뀐다 (정답을 봤다는 사실은 it.revealed로 따로 기억)
+    it.status = perfect || it.status === "perfect" ? "perfect" : "tried";
+    P.events.push({
+      at: it.lastAt, k: KEYS[idx], n: idx + 1, score: pct,
+      miss: d.seq.filter(o => o.t === "miss").map(o => o.w),
+      sub: d.seq.filter(o => o.t === "sub").map(o => [o.typed, o.w]),
+      extra: d.seq.filter(o => o.t === "extra").map(o => o.w),
+      alt: d.seq.filter(o => o.alt).map(o => [o.alt, o.w]),   // 축약형/풀어쓴 형태로 다르게 쓴 것
+    });
+    if (P.events.length > MAX_EVENTS) P.events.splice(0, P.events.length - MAX_EVENTS);
+
+    $("result").innerHTML =
+      `<div class="score">${perfect ? "<b>완벽해요 🎉</b>" : `<b>${pct}%</b> · ${d.total}단어 중 ${d.ok}개 맞음${d.extra ? ` · 없는 단어 ${d.extra}개` : ""}`}</div>${renderGrade(d.seq)}${koBlock()}${tipsBlock(d.seq)}${blockDoneBlock(blockBefore)}`;
+    $("result").classList.add("show");
+    checked = true;
+    save(); paintDots(); paintCard();
+    maybeFinish(wasAll);
+  }
+
+  function checkCloze() {
+    const it = item(idx);
+    it.typed = clozeTyped();
+    if (!CZ.inputs.some(x => x.value.trim())) { focusInput(); return; }
+    const d = gradeCloze();
+    const blockBefore = blockProgress(blockOf(idx))[0], wasAll = doneAll();
+    const pct = d.total ? Math.round(d.ok / d.total * 100) : 100, perfect = d.ok === d.total;
+    it.attempts++; it.lastAt = Date.now(); it.best = Math.max(it.best || 0, pct); it.bestG = Math.max(it.bestG || 0, pct);
+    if (!perfect && it.typed !== it.lastWrong) {
+      it.wrong++; it.lastWrong = it.typed;
+      if (it.wrong >= STAR_AUTO && !it.star && !it.starOff) { it.star = true; setTimeout(() => toast(`${STAR_AUTO}번 틀려서 별표를 붙였어요 ★`, 3500), 50); }
+    }
+    it.status = perfect || it.status === "perfect" ? "perfect" : "tried";
+    P.events.push({ at: it.lastAt, k: KEYS[idx], n: idx + 1, score: pct, lv: LV,
+      miss: d.seq.filter(o => o.t === "miss").map(o => o.w), sub: d.seq.filter(o => o.t === "sub").map(o => [o.typed, o.w]), extra: [] });
+    if (P.events.length > MAX_EVENTS) P.events.splice(0, P.events.length - MAX_EVENTS);
+    CZ.inputs.forEach(x => { const o = d.seq.find(q => q.wi === +x.dataset.k); x.classList.toggle("ok", o.t === "ok"); x.classList.toggle("bad", o.t !== "ok"); });
+    $("result").innerHTML = `<div class="score">${perfect ? "<b>완벽해요 🎉</b>" : `<b>${pct}%</b> · 빈칸 ${d.total}개 중 ${d.ok}개 맞음`}</div>` +
+      `${renderGrade(d.seq)}${koBlock()}${tipsBlock(d.seq)}${blockDoneBlock(blockBefore)}`;
+    $("result").classList.add("show");
+    checked = true;
+    save(); paintDots(); paintCard();
+    maybeFinish(wasAll);
+  }
+
+  function reveal() {
+    const it = item(idx);
+    if (LV < 5 && CZ) CZ.inputs.forEach(x => { if (!x.value.trim()) { x.value = CZ.W[+x.dataset.k]; x.classList.add("shown"); } });
+    const blockBefore = blockProgress(blockOf(idx))[0], wasAll = doneAll();
+    if (it.status !== "perfect" && it.status !== "tried") it.status = "revealed";
+    it.revealed = true;
+    it.lastAt = Date.now();
+    P.events.push({ at: it.lastAt, k: KEYS[idx], n: idx + 1, revealed: true });
+    $("result").innerHTML = `<div class="score">정답</div>${esc(S[idx].text)}${koBlock()}${tipsBlock(null)}${blockDoneBlock(blockBefore)}`;
+    $("result").classList.add("show");
+    checked = true;
+    save(); paintDots();
+    maybeFinish(wasAll);
+  }
+
+  function toggleHint() {
+    if (LV < 5 && CZ) {   // 빈칸: 첫 글자를 칸 안에 흐리게
+      const on = !CZ.inputs[0] || !CZ.inputs[0].placeholder;
+      CZ.inputs.forEach(x => { const w = CZ.W[+x.dataset.k]; x.placeholder = on ? w[0] + "_".repeat(Math.max(0, w.length - 1)) : ""; });
+      focusInput(); return;
+    }
+    const h = $("hint");
+    if (!h.hidden) { h.hidden = true; return; }
+    h.textContent = display(S[idx].text).filter(w => !isFiller(w))
+      .map(w => w[0] + "_".repeat(Math.max(0, w.length - 1))).join(" ");
+    h.hidden = false;
+  }
+
+  // ── 이동 ──
+  let checked = false, ready = false;
+  function go(i, autoplay = true) {
+    if (ready) {
+      const t = LV < 5 && CZ ? clozeTyped() : $("input").value;
+      const empty = LV < 5 && CZ ? !CZ.inputs.some(x => x.value.trim()) : !t;
+      if (!empty || get(idx).typed) item(idx).typed = t;
+    }
+    ready = true;
+    idx = Math.max(0, Math.min(S.length - 1, i));
+    P.cur = KEYS[idx];
+    save();
+    $("cur").textContent = idx + 1;
+    if (LV < 5) renderCloze(idx, get(idx).typed); else $("input").value = get(idx).typed || "";
+    $("hint").hidden = true;
+    $("result").classList.remove("show");
+    checked = false;
+    paintDots(); paintCard();
+    focusInput();
+    if (autoplay) playCur();
+  }
+
+  // 다음/이전: ★만 풀기 중이면 별표 문장만 오간다
+  const starred = () => S.map((_, i) => i).filter(i => get(i).star);
+  function step(dir) {
+    if (!P.starOnly) { if (idx + dir >= 0 && idx + dir < S.length) go(idx + dir); return; }
+    const list = starred();
+    const next = dir > 0 ? list.find(i => i > idx) : [...list].reverse().find(i => i < idx);
+    if (next == null) toast(dir > 0 ? "마지막 별표 문장이에요" : "첫 번째 별표 문장이에요");
+    else go(next);
+  }
+
+  function paintCard() {
+    const it = get(idx);
+    if (REVIEW && S[idx]) $("src").textContent = `${S[idx].src.title.split(/\s+\|\s+/)[0]} · ${S[idx].src.no}번` + (S[idx].why === "star" ? " · ★" : " · 자주 틀림");
+    $("star").classList.toggle("on", !!it.star);
+    $("star").setAttribute("aria-pressed", it.star ? "true" : "false");
+    $("wrongs").textContent = it.wrong ? `틀린 횟수 ${it.wrong}` : "";
+    $("wrongs").classList.toggle("hot", (it.wrong || 0) >= 3);
+  }
+
+  function toggleStar() {
+    const it = item(idx);
+    it.star = !it.star;
+    it.starOff = !it.star;   // 직접 끈 문장은 자동 별표 대상에서 빠짐
+    if (!starred().length) P.starOnly = false;
+    save(); paintDots(); paintCard(); $("input").focus();
+  }
+
+  function toggleStarOnly() {
+    const list = starred();
+    if (!list.length) return;
+    P.starOnly = !P.starOnly; save();
+    if (P.starOnly && !get(idx).star) go(list.find(i => i > idx) ?? list[0]);
+    else paintDots();
+    $("input").focus();
+  }
+
+  function paintDots() {
+    const box = $("dots");
+    if (!box.children.length) {
+      box.innerHTML = S.map((_, i) => `<button class="dot" data-i="${i}">${i + 1}</button>`).join("");
+      box.onclick = e => { const i = e.target.dataset.i; if (i != null) go(+i); };
+    }
+    let done = 0, perfect = 0;
+    [...box.children].forEach((b, i) => {
+      const it = get(i);
+      b.className = "dot" + (it.status ? " " + it.status : "") + (it.star ? " star" : "") + (i === idx ? " cur" : "");
+      if (it.status) done++;
+      if (it.status === "perfect") perfect++;
+    });
+    $("bar").style.width = (done / S.length * 100) + "%";
+    $("stats").textContent = `푼 문장 ${done}/${S.length} · 완벽 ${perfect}`;
+    const n = starred().length;
+    $("starCount").textContent = n;
+    $("starOnly").disabled = !n;
+    $("starOnly").classList.toggle("on", !!P.starOnly);
+    box.classList.toggle("staronly", !!P.starOnly);
+    paintWatch();
+    $("filterNote").textContent = P.starOnly ? "이전·다음·Enter가 별표 문장으로만 이동해요" : (n ? "" : "다시 풀 문장에 ★를 눌러 두세요");
+  }
+
+  // ── 이벤트 ──
+  $("play").onclick = () => { playCur(); $("input").focus(); };
+  $("btnCheck").onclick = check;
+  $("btnReveal").onclick = reveal;
+  $("btnHint").onclick = toggleHint;
+  $("btnPrev").onclick = () => step(-1);
+  $("btnNext").onclick = () => step(1);
+  $("star").onclick = toggleStar;
+  $("starOnly").onclick = toggleStarOnly;
+  $("input").addEventListener("input", () => { checked = false; });
+  $("input").addEventListener("keydown", e => {
+    if (e.isComposing) return;
+    if (e.key === "Tab") { e.preventDefault(); e.shiftKey ? playFromPrev() : playCur(); }
+    else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (checked) step(1);
+      else check();
+    }
+  });
+  $("reset").onclick = () => {
+    if (!confirm("이 영상의 진도를 모두 지울까요?\n(채점 기록은 나중 분석을 위해 남겨 둡니다)")) return;
+    const ev = P.events, cards = P.cards; P = blank(); P.events = ev; if (cards) P.cards = cards; paintCardBtn(); P.speed = P.speed || 1; save();
+    $("dots").innerHTML = ""; $("input").value = ""; ready = false; go(0, false);
+  };
+
+  // ── 진도 내보내기 / 불러오기 (세이브 파일) ──
+  function toast(msg, ms = 2600) {
+    let t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), ms);
+  }
+  const doneCount = items => Object.values(items).filter(it => it.status).length;
+
+  $("export").onclick = () => {
+    const t = $("input").value; if (t) item(idx).typed = t; save();
+    const done = doneCount(P.items);
+    const payload = {
+      app: "dictation", version: 2, video: VIDEO, title: DATA.title, created: DATA.created,
+      sentences: S.length, done, exportedAt: new Date().toISOString(),
+      texts: Object.fromEntries(KEYS.map((k, i) => [k, S[i].text])), // 다시 생성해도 문장을 맞출 수 있게
+      order: KEYS,
+      progress: P,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
+    const a = document.createElement("a");
+    const d = new Date(), stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `진도_${DATA.title.replace(/[\\/:*?"<>|]+/g, " ").slice(0, 40).trim()}_${stamp}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast(`진도를 파일로 저장했어요 (푼 문장 ${done}/${S.length}) — 다운로드 폴더를 확인하세요`);
+  };
+
+  $("import").onclick = () => $("importFile").click();
+  $("importFile").onchange = async e => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    let p;
+    try { p = JSON.parse(await f.text()); } catch (err) { alert("진도 파일을 읽을 수 없어요."); return; }
+    if (!p || p.app !== "dictation") { alert("받아쓰기 진도 파일이 아니에요."); return; }
+    if (p.title !== DATA.title && !confirm(`다른 영상의 진도 파일 같아요.\n파일: ${p.title}\n지금: ${DATA.title}\n\n그래도 불러올까요?`)) return;
+
+    let r, speed = 1, curPos = 0, events = [];
+    if (p.version >= 2 && p.progress) {
+      // v2: 이름표가 같은 문장은 그대로, 다른 건 문장 내용으로 맞춘다
+      const pr = p.progress, order = p.order || Object.keys(pr.items), direct = {}, rest = [];
+      order.forEach((k, pos) => {
+        const it = pr.items[k]; if (!it) return;
+        if (KEYS.includes(k)) direct[k] = it; else rest.push({ pos, text: (p.texts || {})[k], item: it });
+      });
+      const m = remapEntries(rest, S, KEYS, 0.6);
+      for (const [k, it] of Object.entries(m.items)) direct[k] = mergeItem(direct[k], it);
+      r = { items: direct, matched: Object.keys(direct).length - m.guessed, guessed: m.guessed, lost: m.lost };
+      speed = pr.speed || 1; events = pr.events || [];
+      curPos = Math.max(0, KEYS.indexOf(pr.cur));
+      if (!KEYS.includes(pr.cur)) curPos = Math.min(order.indexOf(pr.cur), S.length - 1);
+    } else if (p.state && p.state.items) {
+      // v1(예전 세이브 파일): 같은 페이지면 순서대로, 다시 만든 페이지면 '내가 쓴 답'으로 맞춘다
+      const samePage = p.key && p.key.endsWith(":" + DATA.created);
+      const entries = Object.entries(p.state.items).map(([i, it]) => ({ pos: +i, text: samePage ? S[+i]?.text : it.text, item: fromV1(it) }))
+        .filter(e => e.item.status || e.item.typed).sort((a, b) => a.pos - b.pos);
+      r = remapEntries(entries, S, KEYS, samePage ? 0.99 : 0.5);
+      speed = p.state.speed || 1; curPos = Math.min(p.state.idx || 0, S.length - 1);
+    } else { alert("받아쓰기 진도 파일이 아니에요."); return; }
+
+    const mine = doneCount(P.items);
+    if (mine && !confirm(`지금 진도(푼 문장 ${mine}개)를 파일의 진도(푼 문장 ${doneCount(r.items)}개)로 바꿀까요?`)) return;
+    P = { ...blank(), items: r.items, speed, events: events.length ? events : P.events, cur: KEYS[Math.max(0, curPos)] };
+    save();
+    idx = Math.max(0, curPos);
+    $("dots").innerHTML = ""; ready = false; paintSpeed(); go(idx, false);
+    const moved = r.matched + r.guessed;
+    toast(r.guessed || r.lost
+      ? `진도를 불러왔어요 — ${moved}문장 옮김${r.guessed ? ` (위치로 짐작 ${r.guessed})` : ""}${r.lost ? `, 못 옮김 ${r.lost}` : ""}`
+      : "진도를 불러왔어요", 4500);
+  };
+
+  paintSpeed();
+  paintCardBtn();
+  paintLevels();
+  if (LV < 5) {
+    $("input").hidden = true; $("cloze").hidden = false;
+    $("title").insertAdjacentHTML("beforeend", ` <span class="lvbadge">빈칸 Lv.${LV}</span>`);
+    document.querySelector(".keys").innerHTML = "<kbd>Tab</kbd> 다시 듣기 · <kbd>Enter</kbd>/<kbd>Space</kbd> 다음 빈칸 → 마지막 칸에서 Enter 채점 → 한 번 더 Enter 다음 문장 · <kbd>Shift</kbd>+<kbd>Tab</kbd> 앞 문장부터";
+  }
+  if (DATA.serverMode) { if (!REVIEW) Sync.schedule(); $("syncNote").textContent = "서재에 저장 중"; }
+  else if (WEB) (async () => {
+    $("shelfLink").hidden = false;
+    const guest = "이 기기에만 저장돼요 · 로그인하면 어디서나 이어서";
+    const C = window.Cloud;
+    try {
+      const user = C ? await C.init() : null;
+      const btn = $("authBtn");
+      if (C) {
+        btn.hidden = false;
+        btn.textContent = user ? `${user.email} · 로그아웃` : "구글로 로그인";
+        btn.onclick = () => user ? C.signOut() : C.signIn();
+      }
+      if (!user) { $("syncNote").textContent = guest; return; }
+      $("syncNote").textContent = "계정과 진도 맞추는 중…";
+      Store.save(VIDEO, P);
+      await C.mergeAll(mergeProgress);
+      const before = JSON.stringify(P);
+      P = mergeProgress(P, Store.load(VIDEO)); P.items = P.items || {}; P.events = P.events || [];
+      Sync.cloud = true;
+      $("syncNote").textContent = "계정에 저장됨";
+      if (JSON.stringify(P) !== before) { idx = Math.max(0, KEYS.indexOf(P.cur)); $("dots").innerHTML = ""; ready = false; paintSpeed(); paintCardBtn(); go(idx, false); toast("계정 진도와 맞췄어요"); }
+    } catch (e) {
+      Sync.cloud = false; Sync.needMerge = !!(C && C.user());   // 합치기 전에는 계정에 쓰지 않는다 (덮어쓰기 방지)
+      $("syncNote").textContent = Sync.needMerge ? "계정 저장 못 함 — 이 기기에는 저장됐고, 다음에 다시 보내요" : guest;
+    } finally { window.__cloudReady = true; }
+  })();
+  else (async () => {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 1500);
+      const r = await fetch(SERVER + "/api/progress/" + encodeURIComponent(VIDEO), { signal: ctl.signal });
+      if (!r.ok) return;
+      const remote = (await r.json()).data;
+      const before = JSON.stringify(P);
+      P = mergeProgress(P, remote); P.items = P.items || {}; P.events = P.events || [];
+      Sync.online = true; Store.save(VIDEO, P); Sync.push();
+      $("syncNote").textContent = "서재와 연결됨";
+      if (JSON.stringify(P) !== before) { idx = Math.max(0, KEYS.indexOf(P.cur)); $("dots").innerHTML = ""; ready = false; paintSpeed(); paintCardBtn(); go(idx, false); toast("서재와 진도를 맞췄어요"); }
+    } catch (e) { /* 서재가 꺼져 있으면 지금처럼 이 브라우저에만 저장 */ }
+  })();
+  // 미리보기: 주소 끝에 #card 를 붙여 열면 (기록은 남기지 않고) 지금 진도로 카드 팩을 열어 본다
+  if (location.hash === "#card") setTimeout(() => openCard(true, false), 400);
+  if (location.hash === "#mycard" && P.card) setTimeout(() => openCard(false), 400);
+  save();
+  go(idx, false);
+  if (migratedMsg) toast(migratedMsg, 4500);
+  window.__booted = true;
+}
+if (!DATA && WEB_ID) {
+  fetch("v/" + encodeURIComponent(WEB_ID) + ".json")
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => { DATA = d; boot(); },
+          () => { document.querySelector(".wrap").innerHTML =
+            "<h1>영상 자료를 불러오지 못했어요</h1><p class='meta'>주소가 맞는지 확인해 주세요. <a class='back' href='./'>← 영상 목록으로</a></p>"; });
+} else boot();
+</script>
+</body>
+</html>
