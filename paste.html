@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스크립트 보기</title>
+<meta name="description" content="유튜브 링크와 대본을 넣으면 소리에 맞춰 스크립트를 보여 줘요">
+<style>
+:root{
+  --bg:#f6f3ec; --paper:#fffdf8; --ink:#1f1d1a; --muted:#7a746a; --line:#e4ddd0;
+  --accent:#2f5d50; --accent-ink:#fff; --soft:#efe9dd; --bad:#c0392b;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16171a; --paper:#1f2125; --ink:#ece8e1; --muted:#9a948a; --line:#33363c;
+    --accent:#7fc4ae; --accent-ink:#10201b; --soft:#2a2c31; --bad:#f08a7d;
+  }
+}
+[hidden]{display:none !important}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:baseline;gap:12px}
+h1{font-size:20px;margin:0;letter-spacing:-.02em}
+header a{margin-left:auto;font-size:13px;color:var(--muted)}
+.player{position:relative;aspect-ratio:16/9;background:var(--soft);border-radius:12px;overflow:hidden}
+.player iframe,#ytFrame{position:absolute;inset:0;width:100%;height:100%;border:0}
+#ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;margin:0}
+input,textarea{width:100%;min-width:0;border:1px solid var(--line);background:var(--paper);color:inherit;border-radius:8px;padding:10px 12px;font:inherit;font-size:16px}
+textarea{height:140px;resize:vertical;font-size:14px;line-height:1.5}
+#paste{display:flex;flex-direction:column;gap:8px}
+#paste p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+#go{align-self:flex-start;border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 20px;font-size:15px;cursor:pointer}
+#err{color:var(--bad);font-size:14px;margin:0}
+#result{display:flex;flex-direction:column;gap:10px}
+#now{min-height:3.2em;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+  font-size:20px;line-height:1.45;overflow-wrap:anywhere}
+#note{color:var(--muted);font-size:13.5px;margin:0}
+h2{font-size:15px;margin:6px 0 0}
+#full{position:relative;max-height:52vh;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:6px}
+.line{display:flex;gap:10px;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;font-size:15px;line-height:1.5;padding:7px 10px;border-radius:8px}
+button.line{cursor:pointer}
+button.line:hover{background:var(--soft)}
+.line.on{background:var(--accent);color:var(--accent-ink)}
+.ts{flex:none;font-family:var(--mono);font-size:12.5px;line-height:1.8;opacity:.7}
+.tx{min-width:0;overflow-wrap:anywhere}
+.wrap.loaded #result{order:1}
+.wrap.loaded #paste{order:2}
+</style>
+</head>
+<body>
+<main class="wrap" id="wrap">
+  <header>
+    <h1>스크립트 보기</h1>
+    <a href="index.html">받아쓰기 서재</a>
+  </header>
+  <div class="player"><p id="ph">영상이 여기에 나와요</p><div id="ytFrame"></div></div>
+  <input id="link" type="url" inputmode="url" placeholder="유튜브 링크를 넣어 주세요" aria-label="유튜브 링크">
+  <p id="err" role="alert" hidden></p>
+  <section id="result" hidden>
+    <div id="now" aria-live="off"></div>
+    <p id="note" hidden></p>
+    <h2>전체 스크립트</h2>
+    <div id="full"></div>
+  </section>
+  <div id="paste">
+    <textarea id="script" aria-label="대본" placeholder="대본을 붙여 넣어 주세요&#10;0:00&#10;Hello everyone&#10;0:05&#10;Welcome back"></textarea>
+    <p>유튜브 영상 설명의 '스크립트 표시'를 열어 시간과 함께 복사해 넣어 주세요. 대본은 이 브라우저 안에서만 쓰이고 저장되지 않아요.</p>
+    <button id="go" type="button">스크립트 보기</button>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+
+function parseVideoId(raw) {
+  let s = (raw || "").trim();
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+  let u;
+  try { u = new URL(s); } catch { return null; }
+  const host = u.hostname.replace(/^(www|m|music)\./, "");
+  let id = null;
+  if (host === "youtu.be") id = u.pathname.split("/")[1];
+  else if (host === "youtube.com" || host === "youtube-nocookie.com") {
+    const m = u.pathname.match(/^\/(?:shorts|embed|live|v)\/([^/]+)/);
+    id = m ? m[1] : u.pathname === "/watch" ? u.searchParams.get("v") : null;
+  }
+  return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+}
+
+/* 유튜브 '스크립트 표시'를 복사한 글 → [{t: 초, text}]. 시간이 하나도 없으면 t는 null */
+const STAMP = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\s+(.*))?$/;
+const SPOKEN = /^(?:\d+\s*(?:hours?|minutes?|seconds?|시간|분|초)[,\s]*)+$/i;   // 화면 읽기용 시간 줄 ("5 seconds")
+function parseScript(raw) {
+  const lines = (raw || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.some(l => STAMP.test(l))) return lines.map(text => ({ t: null, text }));
+  const out = [];
+  let cur = null;
+  for (const l of lines) {
+    const m = l.match(STAMP);
+    if (m) {
+      cur = { t: +(m[1] || 0) * 3600 + +m[2] * 60 + +m[3], text: m[4] || "" };
+      out.push(cur);
+    } else if (cur && !SPOKEN.test(l)) {
+      cur.text = cur.text ? cur.text + " " + l : l;
+    }
+  }
+  return out.filter(x => x.text);
+}
+
+const fmt = t => {
+  const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = String(t % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+};
+
+let player = null, playerReady = false, wantId = null, lines = [], rows = [], curIdx = -1;
+
+function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = !msg; }
+
+function openVideo(id) {
+  $("ph").hidden = true;
+  wantId = id;
+  if (player) { if (playerReady) player.cueVideoById(id); return; }
+  const make = () => {
+    player = new YT.Player("ytFrame", {
+      videoId: id, playerVars: { playsinline: 1, rel: 0, controls: 1 },
+      events: {
+        onReady: () => {
+          playerReady = true; window.__paperReady = true;
+          if (wantId !== id) player.cueVideoById(wantId);
+          setInterval(follow, 250);
+        },
+        onError: e => showError([100, 101, 150].includes(e.data)
+          ? "이 영상은 사이트에서 재생할 수 없어요 (삭제됐거나 퍼가기가 막혔어요). 대본은 그대로 볼 수 있어요."
+          : "유튜브 재생 중 문제가 생겼어요. 새로고침해 주세요."),
+      },
+    });
+  };
+  if (window.YT && YT.Player) make();
+  else {
+    window.onYouTubeIframeAPIReady = make;
+    const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(sc);
+  }
+}
+
+function showScript(list) {
+  lines = list; curIdx = -1;
+  const timed = list[0].t !== null, box = $("full");
+  box.textContent = "";
+  rows = list.map(l => {
+    const row = document.createElement(timed ? "button" : "div");
+    row.className = "line";
+    if (timed) {
+      row.type = "button";
+      const ts = document.createElement("span"); ts.className = "ts"; ts.textContent = fmt(l.t);
+      row.append(ts);
+      row.onclick = () => { if (playerReady) { player.seekTo(l.t, true); player.playVideo(); } };
+    }
+    const tx = document.createElement("span"); tx.className = "tx"; tx.textContent = l.text;
+    row.append(tx);
+    box.append(row);
+    return row;
+  });
+  $("now").textContent = "";
+  $("now").hidden = !timed;
+  $("note").hidden = timed;
+  $("note").textContent = timed ? "" : "대본에 시간 정보가 없어서 소리에 맞춰 움직이지는 않아요. 시간과 함께 복사하면 함께 움직여요.";
+  $("result").hidden = false;
+  $("wrap").classList.add("loaded");
+}
+
+function follow() {
+  if (!lines.length || lines[0].t === null) return;
+  const now = player.getCurrentTime();
+  let idx = -1;
+  for (let i = 0; i < lines.length && lines[i].t <= now; i++) idx = i;
+  if (idx === curIdx) return;
+  rows[curIdx]?.classList.remove("on");
+  curIdx = idx;
+  $("now").textContent = idx < 0 ? "" : lines[idx].text;
+  if (idx < 0) return;
+  const row = rows[idx], box = $("full");
+  row.classList.add("on");
+  box.scrollTop = row.offsetTop - box.clientHeight / 2;
+}
+
+$("go").onclick = () => {
+  const id = parseVideoId($("link").value);
+  if (!id) return showError("유튜브 영상 링크를 확인해 주세요.");
+  const list = parseScript($("script").value);
+  if (!list.length) return showError("대본을 붙여 넣어 주세요.");
+  showError("");
+  showScript(list);
+  openVideo(id);
+};
+</script>
+</body>
+</html>
