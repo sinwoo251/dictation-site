@@ -27,7 +27,7 @@ h1{font-size:20px;margin:0;letter-spacing:-.02em}
 header a{font-size:13px;color:var(--muted)}
 header a.back{margin-left:auto}
 .authbtn{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:inherit}
-#loginNote{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+#loginNote,#adultNote{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .player{position:relative;aspect-ratio:16/9;background:var(--soft);border-radius:12px;overflow:hidden}
 .player iframe,#ytFrame{position:absolute;inset:0;width:100%;height:100%;border:0}
 #ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;margin:0}
@@ -69,6 +69,7 @@ button.line:hover{background:var(--soft)}
     <button class="authbtn" id="authBtn" type="button" hidden></button>
   </header>
   <p id="loginNote" hidden>로그인하면 대본을 자동으로 가져와요. 지금은 아래 칸에 대본을 붙여 넣어도 돼요.</p>
+  <p id="adultNote">AI 대본 자동 불러오기는 구글 로그인한 만 18세 이상만 쓸 수 있어요.</p>
   <div class="player"><p id="ph">영상이 여기에 나와요</p><div id="ytFrame"></div></div>
   <div class="linkrow">
     <input id="link" type="url" inputmode="url" placeholder="유튜브 링크를 넣어 주세요" aria-label="유튜브 링크">
@@ -151,11 +152,21 @@ const FAIL_HINT = {
   nologin: "아래 칸에 대본을 붙여 넣어 주세요.",
   signin: "로그인하면 대본을 자동으로 가져와요. 로그인하거나, 아래 칸에 대본을 붙여 넣어 주세요.",
   login: "로그인이 풀렸어요. 다시 로그인한 뒤 해 보거나, 아래 칸에 대본을 붙여 넣어 주세요.",
+  adult: "자동 불러오기는 만 18세 이상만 쓸 수 있어요. 아래 칸에 대본을 붙여 넣어 주세요.",
   denied: "이 계정은 대본 자동 불러오기를 쓸 수 없어요. 아래 칸에 대본을 붙여 넣어 주세요.",
   long: "30분이 넘는 영상은 자동으로 대본을 가져오지 않아요. 아래 칸에 대본을 붙여 넣어 주세요.",
 };
 const C = window.Cloud;   // 설정이 없으면 null: 로그인 없이 영상 재생·붙여넣기만 쓴다
 const getToken = async () => { try { return C ? await C.token() : null; } catch { return null; } };
+const ADULT_KEY = "dictation:adult:v1";
+const ADULT_Q = "자동 불러오기는 만 18세 이상만 쓸 수 있어요. 만 18세 이상이신가요?";
+// 이 브라우저에서 "예"라고 답했으면 다시 묻지 않는다. 저장이 안 되면 다음에 또 묻는다
+function confirmAdult() {
+  try { if (localStorage.getItem(ADULT_KEY) === "1") return true; } catch {}
+  if (!window.confirm(ADULT_Q)) return false;
+  try { localStorage.setItem(ADULT_KEY, "1"); } catch {}
+  return true;
+}
 let authUser = null, sessionDead = false;
 let player = null, playerReady = false, wantId = null, lines = [], rows = [], curIdx = -1;
 let loadToken = 0, loading = false, lastFail = null, readyWaiters = [];
@@ -250,6 +261,7 @@ async function fetchScript(id) {
   lastFail = null; $("hint").hidden = true;
   if (!(await getToken())) return fail("signin");   // 로그인 안 했으면 서버에 묻지 않는다
   if (!alive()) return;
+  if (!confirmAdult()) return fail("adult");        // 만 18세 미만이면 서버에 묻지 않는다
   setWaiting(true);
   if (!playerReady) await Promise.race([new Promise(r => readyWaiters.push(r)), wait(10000)]);
   if (!alive()) return;
@@ -266,7 +278,7 @@ async function fetchScript(id) {
   try {
     const r = await fetch(TRANSCRIPT_URL, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ videoId: id }), signal: ctl.signal,
+      body: JSON.stringify({ videoId: id, adult: true }), signal: ctl.signal,
     });
     body = await r.json();
   } catch { body = null; }
