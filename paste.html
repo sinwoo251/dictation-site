@@ -24,7 +24,10 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:12px}
 header{display:flex;align-items:baseline;gap:12px}
 h1{font-size:20px;margin:0;letter-spacing:-.02em}
-header a{margin-left:auto;font-size:13px;color:var(--muted)}
+header a{font-size:13px;color:var(--muted)}
+header a.back{margin-left:auto}
+.authbtn{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:inherit}
+#loginNote{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .player{position:relative;aspect-ratio:16/9;background:var(--soft);border-radius:12px;overflow:hidden}
 .player iframe,#ytFrame{position:absolute;inset:0;width:100%;height:100%;border:0}
 #ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;margin:0}
@@ -39,6 +42,7 @@ textarea{height:140px;resize:vertical;font-size:14px;line-height:1.5}
 .linkrow input{flex:1 1 auto}
 #paste #hint{color:var(--ink);font-size:14px}
 #err{color:var(--bad);font-size:14px;margin:0}
+#status{color:var(--muted);font-size:14px;margin:0}
 #result{display:flex;flex-direction:column;gap:10px}
 #now{min-height:3.2em;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
   font-size:20px;line-height:1.45;overflow-wrap:anywhere}
@@ -59,14 +63,17 @@ button.line:hover{background:var(--soft)}
 <main class="wrap" id="wrap">
   <header>
     <h1>스크립트 보기</h1>
-    <a href="index.html">받아쓰기 서재</a>
+    <a class="back" href="index.html">받아쓰기 서재</a>
+    <button class="authbtn" id="authBtn" type="button" hidden></button>
   </header>
+  <p id="loginNote" hidden>로그인하면 대본을 자동으로 가져와요. 지금은 아래 칸에 대본을 붙여 넣어도 돼요.</p>
   <div class="player"><p id="ph">영상이 여기에 나와요</p><div id="ytFrame"></div></div>
   <div class="linkrow">
     <input id="link" type="url" inputmode="url" placeholder="유튜브 링크를 넣어 주세요" aria-label="유튜브 링크">
     <button id="open" type="button">불러오기</button>
   </div>
   <p id="err" role="alert" hidden></p>
+  <p id="status" role="status" hidden>대본을 가져오는 중이에요 (1~2분 걸릴 수 있어요)</p>
   <section id="result" hidden>
     <div id="now" aria-live="off"></div>
     <p id="note" hidden></p>
@@ -80,6 +87,9 @@ button.line:hover{background:var(--soft)}
     <button id="go" type="button">스크립트 보기</button>
   </div>
 </main>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
+<script src="cloud.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
@@ -124,7 +134,24 @@ const fmt = t => {
   return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 };
 
+const TRANSCRIPT_URL = "https://dictation-transcript.sinwoo0617.workers.dev/api/transcript";
+const MAX_SECONDS = 1800;
+const AI_NOTE = "AI가 받아쓴 대본이라 틀릴 수 있어요. 들리는 소리와 다르면 직접 고쳐 붙여 넣어도 돼요.";
+const FAIL_HINT = {
+  busy: "지금 요청이 많아요. 잠시 뒤에 다시 해 보거나, 아래 칸에 대본을 붙여 넣어 주세요.",
+  limit: "오늘 사용량을 다 썼어요. 내일 다시 해 보거나, 아래 칸에 대본을 붙여 넣어 주세요.",
+  failed: "대본을 자동으로 가져오지 못했어요. 아래 칸에 대본을 붙여 넣어 주세요.",
+  nologin: "아래 칸에 대본을 붙여 넣어 주세요.",
+  signin: "로그인하면 대본을 자동으로 가져와요. 로그인하거나, 아래 칸에 대본을 붙여 넣어 주세요.",
+  login: "로그인이 풀렸어요. 다시 로그인한 뒤 해 보거나, 아래 칸에 대본을 붙여 넣어 주세요.",
+  denied: "이 계정은 대본 자동 불러오기를 쓸 수 없어요. 아래 칸에 대본을 붙여 넣어 주세요.",
+  long: "30분이 넘는 영상은 자동으로 대본을 가져오지 않아요. 아래 칸에 대본을 붙여 넣어 주세요.",
+};
+const C = window.Cloud;   // 설정이 없으면 null: 로그인 없이 영상 재생·붙여넣기만 쓴다
+const getToken = async () => { try { return C ? await C.token() : null; } catch { return null; } };
+let authUser = null, sessionDead = false;
 let player = null, playerReady = false, wantId = null, lines = [], rows = [], curIdx = -1;
+let loadToken = 0, loading = false, lastFail = null, readyWaiters = [];
 
 function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = !msg; }
 
@@ -140,7 +167,7 @@ function openVideo(id) {
       videoId: first, playerVars: { playsinline: 1, rel: 0, controls: 1 },
       events: {
         onReady: () => {
-          playerReady = true; window.__paperReady = true;
+          playerReady = true; window.__paperReady = true; readyWaiters.splice(0).forEach(f => f());
           if (wantId !== first) player.cueVideoById(wantId);
           setInterval(follow, 250);
         },
@@ -157,7 +184,8 @@ function openVideo(id) {
   }
 }
 
-function showScript(list) {
+function showScript(list, note = "") {
+  loadToken++; setWaiting(false);
   lines = list; curIdx = -1;
   const timed = list[0].t !== null, box = $("full");
   box.textContent = "";
@@ -177,14 +205,16 @@ function showScript(list) {
   });
   $("now").textContent = "";
   $("now").hidden = !timed;
-  $("note").hidden = timed;
-  $("note").textContent = timed ? "" : "대본에 시간 정보가 없어서 소리에 맞춰 움직이지는 않아요. 시간과 함께 복사하면 함께 움직여요.";
+  const noTime = timed ? "" : "대본에 시간 정보가 없어서 소리에 맞춰 움직이지는 않아요. 시간과 함께 복사하면 함께 움직여요.";
+  $("note").textContent = [note, noTime].filter(Boolean).join(" ");
+  $("note").hidden = !$("note").textContent;
   $("result").hidden = false;
   $("hint").hidden = true;
   $("wrap").classList.add("loaded");
 }
 
 function clearScript() {
+  loadToken++; setWaiting(false);
   lines = []; rows = []; curIdx = -1;
   $("script").value = "";
   $("full").textContent = "";
@@ -193,13 +223,58 @@ function clearScript() {
   $("wrap").classList.remove("loaded");
 }
 
+function setWaiting(on) { loading = on; $("status").hidden = !on; }
+
+function showHint(msg) { const h = $("hint"); h.textContent = msg; h.hidden = false; $("script").focus(); }
+
+/* 영상 길이를 본 뒤 Worker에 대본을 부탁한다. 번호(loadToken)가 달라지면 늦게 온 결과는 버린다 */
+async function fetchScript(id) {
+  const my = ++loadToken, alive = () => my === loadToken;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const fail = key => { if (!alive()) return; lastFail = key; setWaiting(false); if (key === "login") { sessionDead = true; paintAuth(); }
+    showHint(FAIL_HINT[key === "signin" && !C ? "nologin" : key] || FAIL_HINT.failed); };
+  lastFail = null; $("hint").hidden = true;
+  if (!(await getToken())) return fail("signin");   // 로그인 안 했으면 서버에 묻지 않는다
+  if (!alive()) return;
+  setWaiting(true);
+  if (!playerReady) await Promise.race([new Promise(r => readyWaiters.push(r)), wait(10000)]);
+  if (!alive()) return;
+  // 재생기가 방금 고른 영상(id)의 정보를 줄 때만 길이를 믿는다 (영상을 바꾼 직후엔 앞 영상 길이가 남아 있을 수 있음)
+  const dur = () => { try { return player.getVideoData().video_id === id ? +player.getDuration() || 0 : 0; } catch { return 0; } };
+  let d = dur();
+  for (let i = 0; !d && i < 12; i++) { await wait(250); if (!alive()) return; d = dur(); }   // 모르면 최대 3초 기다림
+  if (d > MAX_SECONDS) return fail("long");
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 120000);
+  const token = await getToken();   // 기다리는 사이 표가 새로 바뀌었을 수 있어 다시 받는다
+  if (!alive()) return;
+  if (!token) { clearTimeout(timer); return fail("login"); }
+  let body = null;
+  try {
+    const r = await fetch(TRANSCRIPT_URL, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ videoId: id }), signal: ctl.signal,
+    });
+    body = await r.json();
+  } catch { body = null; }
+  clearTimeout(timer);
+  if (!alive()) return;
+  if ($("script").value.trim()) return setWaiting(false);           // 기다리는 사이 직접 붙여 넣었으면 그쪽을 지킴
+  const list = body && body.ok === true && typeof body.text === "string" ? parseScript(body.text) : [];
+  if (!list.length) return fail(body && !body.ok ? body.reason : "failed");
+  showScript(list, AI_NOTE);
+}
+
 function openLink() {
   const id = parseVideoId($("link").value);
   if (!id) return showError("유튜브 영상 링크를 확인해 주세요.");
   showError("");
-  if (wantId && id !== wantId) clearScript();
+  const same = id === wantId;
+  if (wantId && !same) clearScript();
   openVideo(id);
-  if (!lines.length) { $("hint").hidden = false; $("script").focus(); }
+  if (lines.length || (same && loading)) return;
+  if (same && lastFail === "busy") return fetchScript(id);   // 바쁨은 다시 눌러 보라고 안내했으니 다시 요청 (영상은 그대로)
+  if (same) return showHint($("hint").textContent);
+  fetchScript(id);
 }
 
 function follow() {
@@ -216,6 +291,21 @@ function follow() {
   row.classList.add("on");
   box.scrollTop = row.offsetTop - box.clientHeight / 2;
 }
+
+function paintAuth() {
+  if (!C) return;
+  const b = $("authBtn"), on = authUser && !sessionDead;
+  b.hidden = false;
+  // 표가 죽었으면 로그아웃(기기 진도 삭제)이 아니라 다시 로그인만 권한다
+  b.textContent = on ? `${authUser.email} · 로그아웃` : sessionDead ? "다시 로그인" : "구글 로그인";
+  b.onclick = () => on ? C.signOut() : C.signIn();
+  $("loginNote").hidden = !!authUser || sessionDead;
+}
+(async () => {
+  if (!C) return;
+  authUser = await C.init();
+  paintAuth();
+})();
 
 $("open").onclick = openLink;
 $("link").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); openLink(); } };

@@ -20,6 +20,13 @@ window.Cloud = (() => {
       return user;
     },
     user: () => user,
+    /* 지금 로그인의 access_token (Worker에 보낼 표). 없으면 null */
+    async token() {
+      try {
+        const { data } = await sb.auth.getSession();
+        return (data && data.session && data.session.access_token) || null;
+      } catch (e) { return null; }
+    },
     signIn: () => sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } }),
     /* 로그아웃: 이 기기에 남은 진도도 지운다 (공용 컴퓨터에서 다음 사람 계정에 섞이지 않게). 계정에는 그대로 남아 있음 */
     async signOut() {
