@@ -41,6 +41,8 @@ textarea{height:140px;resize:vertical;font-size:14px;line-height:1.5}
 .linkrow{display:flex;gap:8px}
 .linkrow input{flex:1 1 auto}
 #paste #hint{color:var(--ink);font-size:14px}
+#pasteTitle{cursor:pointer;font-size:15px;font-weight:600;padding:2px 0}
+.pastebody{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 #err{color:var(--bad);font-size:14px;margin:0}
 #status{color:var(--muted);font-size:14px;margin:0}
 #result{display:flex;flex-direction:column;gap:10px}
@@ -82,9 +84,14 @@ button.line:hover{background:var(--soft)}
   </section>
   <div id="paste">
     <p id="hint" hidden>영상을 불러왔어요. 이제 아래 칸에 대본을 붙여 넣어 주세요.</p>
-    <textarea id="script" aria-label="대본" placeholder="대본을 붙여 넣어 주세요&#10;0:00&#10;Hello everyone&#10;0:05&#10;Welcome back"></textarea>
-    <p>유튜브 영상 설명의 '스크립트 표시'를 열어 시간과 함께 복사해 넣어 주세요. 대본은 이 브라우저 안에서만 쓰이고 저장되지 않아요.</p>
-    <button id="go" type="button">스크립트 보기</button>
+    <details id="pasteBox" open>
+      <summary id="pasteTitle">대본 직접 넣기</summary>
+      <div class="pastebody">
+        <textarea id="script" aria-label="대본" placeholder="대본을 붙여 넣어 주세요&#10;0:00&#10;Hello everyone&#10;0:05&#10;Welcome back"></textarea>
+        <p>유튜브 영상 설명의 '스크립트 표시'를 열어 시간과 함께 복사해 넣어 주세요. 대본은 이 브라우저 안에서만 쓰이고 저장되지 않아요.</p>
+        <button id="go" type="button">스크립트 보기</button>
+      </div>
+    </details>
   </div>
 </main>
 <script src="config.js"></script>
@@ -210,7 +217,13 @@ function showScript(list, note = "") {
   $("note").hidden = !$("note").textContent;
   $("result").hidden = false;
   $("hint").hidden = true;
+  setPasteBox(false);
   $("wrap").classList.add("loaded");
+}
+
+function setPasteBox(open) {
+  $("pasteBox").open = open;
+  $("pasteTitle").textContent = open ? "대본 직접 넣기" : "대본이 틀렸나요? 직접 넣기";
 }
 
 function clearScript() {
@@ -221,11 +234,12 @@ function clearScript() {
   $("now").textContent = "";
   $("result").hidden = true;
   $("wrap").classList.remove("loaded");
+  setPasteBox(true);
 }
 
 function setWaiting(on) { loading = on; $("status").hidden = !on; }
 
-function showHint(msg) { const h = $("hint"); h.textContent = msg; h.hidden = false; $("script").focus(); }
+function showHint(msg) { const h = $("hint"); h.textContent = msg; h.hidden = false; setPasteBox(true); $("script").focus(); }
 
 /* 영상 길이를 본 뒤 Worker에 대본을 부탁한다. 번호(loadToken)가 달라지면 늦게 온 결과는 버린다 */
 async function fetchScript(id) {
