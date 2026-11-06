@@ -32,7 +32,12 @@ input,textarea{width:100%;min-width:0;border:1px solid var(--line);background:va
 textarea{height:140px;resize:vertical;font-size:14px;line-height:1.5}
 #paste{display:flex;flex-direction:column;gap:8px}
 #paste p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-#go{align-self:flex-start;border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 20px;font-size:15px;cursor:pointer}
+#go,#open{border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 20px;font-size:15px;cursor:pointer}
+#go{align-self:flex-start}
+#open{flex:none;padding:10px 16px}
+.linkrow{display:flex;gap:8px}
+.linkrow input{flex:1 1 auto}
+#paste #hint{color:var(--ink);font-size:14px}
 #err{color:var(--bad);font-size:14px;margin:0}
 #result{display:flex;flex-direction:column;gap:10px}
 #now{min-height:3.2em;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
@@ -57,7 +62,10 @@ button.line:hover{background:var(--soft)}
     <a href="index.html">받아쓰기 서재</a>
   </header>
   <div class="player"><p id="ph">영상이 여기에 나와요</p><div id="ytFrame"></div></div>
-  <input id="link" type="url" inputmode="url" placeholder="유튜브 링크를 넣어 주세요" aria-label="유튜브 링크">
+  <div class="linkrow">
+    <input id="link" type="url" inputmode="url" placeholder="유튜브 링크를 넣어 주세요" aria-label="유튜브 링크">
+    <button id="open" type="button">불러오기</button>
+  </div>
   <p id="err" role="alert" hidden></p>
   <section id="result" hidden>
     <div id="now" aria-live="off"></div>
@@ -66,6 +74,7 @@ button.line:hover{background:var(--soft)}
     <div id="full"></div>
   </section>
   <div id="paste">
+    <p id="hint" hidden>영상을 불러왔어요. 이제 아래 칸에 대본을 붙여 넣어 주세요.</p>
     <textarea id="script" aria-label="대본" placeholder="대본을 붙여 넣어 주세요&#10;0:00&#10;Hello everyone&#10;0:05&#10;Welcome back"></textarea>
     <p>유튜브 영상 설명의 '스크립트 표시'를 열어 시간과 함께 복사해 넣어 주세요. 대본은 이 브라우저 안에서만 쓰이고 저장되지 않아요.</p>
     <button id="go" type="button">스크립트 보기</button>
@@ -120,16 +129,19 @@ let player = null, playerReady = false, wantId = null, lines = [], rows = [], cu
 function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = !msg; }
 
 function openVideo(id) {
+  if (id === wantId) return;
   $("ph").hidden = true;
+  const opened = wantId !== null;
   wantId = id;
-  if (player) { if (playerReady) player.cueVideoById(id); return; }
+  if (opened) { if (playerReady) player.cueVideoById(id); return; }
   const make = () => {
+    const first = wantId;
     player = new YT.Player("ytFrame", {
-      videoId: id, playerVars: { playsinline: 1, rel: 0, controls: 1 },
+      videoId: first, playerVars: { playsinline: 1, rel: 0, controls: 1 },
       events: {
         onReady: () => {
           playerReady = true; window.__paperReady = true;
-          if (wantId !== id) player.cueVideoById(wantId);
+          if (wantId !== first) player.cueVideoById(wantId);
           setInterval(follow, 250);
         },
         onError: e => showError([100, 101, 150].includes(e.data)
@@ -168,7 +180,26 @@ function showScript(list) {
   $("note").hidden = timed;
   $("note").textContent = timed ? "" : "대본에 시간 정보가 없어서 소리에 맞춰 움직이지는 않아요. 시간과 함께 복사하면 함께 움직여요.";
   $("result").hidden = false;
+  $("hint").hidden = true;
   $("wrap").classList.add("loaded");
+}
+
+function clearScript() {
+  lines = []; rows = []; curIdx = -1;
+  $("script").value = "";
+  $("full").textContent = "";
+  $("now").textContent = "";
+  $("result").hidden = true;
+  $("wrap").classList.remove("loaded");
+}
+
+function openLink() {
+  const id = parseVideoId($("link").value);
+  if (!id) return showError("유튜브 영상 링크를 확인해 주세요.");
+  showError("");
+  if (wantId && id !== wantId) clearScript();
+  openVideo(id);
+  if (!lines.length) { $("hint").hidden = false; $("script").focus(); }
 }
 
 function follow() {
@@ -186,11 +217,13 @@ function follow() {
   box.scrollTop = row.offsetTop - box.clientHeight / 2;
 }
 
+$("open").onclick = openLink;
+$("link").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); openLink(); } };
 $("go").onclick = () => {
+  const list = parseScript($("script").value);
+  if (!list.length) return openLink();
   const id = parseVideoId($("link").value);
   if (!id) return showError("유튜브 영상 링크를 확인해 주세요.");
-  const list = parseScript($("script").value);
-  if (!list.length) return showError("대본을 붙여 넣어 주세요.");
   showError("");
   showScript(list);
   openVideo(id);
