@@ -332,6 +332,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
       <button class="linkbtn" id="cardBtn" hidden></button>
       <button class="linkbtn" id="reportAll" title="영상 전체의 채점 분석">📊 전체 분석</button>
       <button class="linkbtn" id="cardPreview" title="지금까지의 진도로 완료 카드를 미리 열어 봐요 (기록은 안 남아요)">🎴 카드 미리보기</button>
+      <label class="linkbtn" id="collectRow" hidden><input type="checkbox" id="collectToggle"> 기록 설정</label>
       <button class="linkbtn" id="reset">진도 초기화</button>
     </span>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -392,6 +393,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <script src="cloud.js"></script>
+<script src="collect.js"></script>
 <script>
 let DATA = /*__DATA__*/null;
 const WEB_ID = new URLSearchParams(location.search).get("v");   // 웹판: study.html?v=<영상ID>
@@ -1297,6 +1299,7 @@ function boot() {
       pl.ended = true;
       P.watched = P.watched || {}; P.watched[pl.b] = Date.now();
       P.events.push({ at: Date.now(), watched: [pl.a + 1, pl.z + 1] });
+      window.Collect && Collect.add({ video: BASE_VIDEO, lv: LV < 5 ? LV : null, kind: "watch", seg: [pl.a + 1, pl.z + 1] });
       save();
       $("plDone").textContent = "✓ 끝까지 들었어요 · ▶로 다시 듣기";
     }
@@ -1510,6 +1513,9 @@ function boot() {
       extra: d.seq.filter(o => o.t === "extra").map(o => o.w),
       alt: d.seq.filter(o => o.alt).map(o => [o.alt, o.w]),   // 축약형/풀어쓴 형태로 다르게 쓴 것
     });
+    window.Collect && Collect.add({ video: BASE_VIDEO, lv: LV < 5 ? LV : null, kind: "grade", at: it.lastAt, k: KEYS[idx], n: idx + 1, score: pct,
+      miss: d.seq.filter(o => o.t === "miss").map(o => o.w), sub: d.seq.filter(o => o.t === "sub").map(o => [o.typed, o.w]),
+      extra: d.seq.filter(o => o.t === "extra").map(o => o.w), alt: d.seq.filter(o => o.alt).map(o => [o.alt, o.w]) });
     if (P.events.length > MAX_EVENTS) P.events.splice(0, P.events.length - MAX_EVENTS);
 
     $("result").innerHTML =
@@ -1534,6 +1540,8 @@ function boot() {
     }
     it.status = perfect || it.status === "perfect" ? "perfect" : "tried";
     P.events.push({ at: it.lastAt, k: KEYS[idx], n: idx + 1, score: pct, lv: LV,
+      miss: d.seq.filter(o => o.t === "miss").map(o => o.w), sub: d.seq.filter(o => o.t === "sub").map(o => [o.typed, o.w]), extra: [] });
+    window.Collect && Collect.add({ video: BASE_VIDEO, lv: LV < 5 ? LV : null, kind: "grade", at: it.lastAt, k: KEYS[idx], n: idx + 1, score: pct,
       miss: d.seq.filter(o => o.t === "miss").map(o => o.w), sub: d.seq.filter(o => o.t === "sub").map(o => [o.typed, o.w]), extra: [] });
     if (P.events.length > MAX_EVENTS) P.events.splice(0, P.events.length - MAX_EVENTS);
     CZ.inputs.forEach(x => { const o = d.seq.find(q => q.wi === +x.dataset.k); x.classList.toggle("ok", o.t === "ok"); x.classList.toggle("bad", o.t !== "ok"); });

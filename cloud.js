@@ -36,6 +36,7 @@ window.Cloud = (() => {
         const ks = [];
         for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(PREFIX)) ks.push(k); }
         ks.forEach(k => localStorage.removeItem(k));
+        localStorage.removeItem("dictation:anon:v1");   // 공용 컴퓨터: 다음 사람과 기록 번호가 섞이지 않게
       } catch (e) {}
       location.reload();
     },

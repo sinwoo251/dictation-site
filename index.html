@@ -79,12 +79,15 @@ footer a{color:inherit}
 
   <footer>
     <a href="privacy.html">개인정보처리방침</a>
+    <a href="terms.html">이용약관</a>
+    <label id="collectRow" hidden><input type="checkbox" id="collectToggle"> 기록 설정: 이름 없는 채점 기록 보내기</label>
     <span>영상 소리는 유튜브 플레이어로 재생돼요.</span>
   </footer>
 </div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <script src="cloud.js"></script>
+<script src="collect.js"></script>
 <script>
 (async () => {
   const $ = id => document.getElementById(id);
