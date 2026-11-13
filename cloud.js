@@ -94,6 +94,17 @@ window.Cloud = (() => {
       try { localStorage.setItem(day, String(n + 1)); } catch (e) {}
       return { ok: true };
     },
+    /* 의견 남기기: 별점 1~5 + 한 줄(300자). 이메일·IP는 저장하지 않음 */
+    async feedback(rating, note, videoId, page) {
+      rating = +rating; note = String(note || "").trim().slice(0, 300);
+      const row = { rating, note: note || null, video_id: /^[A-Za-z0-9_-]{11}$/.test(videoId || "") ? videoId : null, page: page === "study" ? "study" : "home" };
+      if (!(rating >= 1 && rating <= 5)) return { ok: false, message: "별점을 골라 주세요" };
+      try {
+        const { error } = await sb.from("feedback").insert(row);
+        if (error) return { ok: false, message: /잠시 후/.test(error.message || "") ? error.message : "보내지 못했어요. 잠시 후 다시 해 주세요" };
+      } catch (e) { return { ok: false, message: "보내지 못했어요. 잠시 후 다시 해 주세요" }; }
+      return { ok: true };
+    },
   };
   return C;
 })();

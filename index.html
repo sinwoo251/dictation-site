@@ -50,6 +50,27 @@ h1{font-size:24px;margin:0;letter-spacing:-.02em}
 .req button{border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer}
 #reqMsg{margin-top:10px;font-size:13.5px;min-height:1em}
 #reqMsg.bad{color:var(--bad)} #reqMsg.ok{color:var(--ok)}
+.entrance{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 0 22px}
+.ecard{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;color:inherit;text-decoration:none;font:inherit;text-align:left;cursor:pointer}
+.ecard:hover{border-color:var(--accent)}
+.ecard b{font-size:16px}
+.ecard span{color:var(--muted);font-size:13.5px}
+@media (max-width:560px){.entrance{grid-template-columns:1fr}}
+.fb{margin-top:24px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px}
+.fb h2{font-size:17px;margin:0 0 6px}
+.fb p{margin:0 0 12px;color:var(--muted);font-size:13.5px}
+.stars{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.stars label{position:relative;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer}
+.stars label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.stars input{position:absolute;opacity:0;width:1px;height:1px}
+.stars label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.fb .row{display:flex;gap:8px;flex-wrap:wrap}
+.fb input[type=text]{flex:1 1 240px;min-width:0;border:1px solid var(--line);background:var(--bg);color:inherit;border-radius:8px;padding:9px 10px;font-size:14px}
+.fb button{border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer}
+.fb button:disabled{opacity:.6;cursor:default}
+#fbMsg{margin-top:10px;font-size:13.5px;min-height:1em}
+#fbMsg.bad{color:var(--bad)} #fbMsg.ok{color:var(--ok)}
 footer{margin-top:40px;color:var(--muted);font-size:12.5px;display:flex;gap:14px;flex-wrap:wrap}
 footer a{color:inherit}
 </style>
@@ -60,7 +81,11 @@ footer a{color:inherit}
     <h1>받아쓰기 서재</h1>
     <button class="authbtn" id="authBtn" hidden></button>
   </header>
-  <p class="sub">유튜브 영상을 한 문장씩 듣고 받아 적어 보세요. 로그인하지 않아도 바로 공부할 수 있어요. 다른 영상은 <a href="paste.html">스크립트 보기</a>에서 대본과 함께 볼 수 있어요. 처음이라면 <a href="guide.pdf" target="_blank" rel="noopener">이용 안내(PDF)</a>를 먼저 봐 주세요.</p>
+  <nav class="entrance" id="entrance" aria-label="시작하기">
+    <button type="button" class="ecard" id="goStudy"><b>✏️ 받아쓰기 공부</b><span>올라온 영상을 한 문장씩 듣고 받아 적어요. 채점과 진도 기록이 있어요.</span></button>
+    <a class="ecard" id="goPaste" href="paste.html"><b>📄 스크립트 보기</b><span>원하는 유튜브 영상을 넣고 소리에 맞춰 움직이는 대본을 봐요.</span></a>
+  </nav>
+  <p class="sub">로그인하지 않아도 바로 공부할 수 있어요. 처음이라면 <a href="guide.pdf" target="_blank" rel="noopener">이용 안내(PDF)</a>를 먼저 봐 주세요.</p>
   <div class="bands" id="bands"></div>
   <div class="grid" id="grid"></div>
   <p class="empty" id="empty" hidden>아직 올라온 영상이 없어요.</p>
@@ -75,6 +100,18 @@ footer a{color:inherit}
       <button id="reqSend" type="submit">요청 보내기</button>
     </form>
     <div id="reqMsg" role="status"></div>
+  </section>
+
+  <section class="fb" id="feedback" hidden>
+    <h2>의견 남기기</h2>
+    <p>쓰면서 느낀 점을 알려 주세요. 이름이나 이메일은 저장하지 않아요.</p>
+    <fieldset style="border:0;padding:0;margin:0 0 10px"><legend class="sr">별점</legend>
+    <div class="stars"><label><input type="radio" name="rating" value="1" aria-label="1점">★</label><label><input type="radio" name="rating" value="2" aria-label="2점">★★</label><label><input type="radio" name="rating" value="3" aria-label="3점">★★★</label><label><input type="radio" name="rating" value="4" aria-label="4점">★★★★</label><label><input type="radio" name="rating" value="5" aria-label="5점">★★★★★</label></div></fieldset>
+    <div class="row">
+      <input id="fbNote" type="text" maxlength="300" placeholder="한 줄 의견 (선택)" aria-label="한 줄 의견">
+      <button id="fbSend" type="button">보내기</button>
+    </div>
+    <div id="fbMsg" role="status"></div>
   </section>
 
   <footer>
@@ -154,6 +191,35 @@ footer a{color:inherit}
     m.textContent = r.ok ? "요청을 받았어요. 만들어지면 이 목록에 올라와요 🙌" : r.error;
     if (r.ok) { $("reqUrl").value = ""; $("reqNote").value = ""; }
   };
+  // ── 입구 카드 ──
+  $("goStudy").onclick = () => $("grid").scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // ── 의견 남기기: 시행일 이후 + 저장소가 있을 때만 ──
+  const Col = window.Collect;
+  if (C && Col && Col.reached()) {
+    $("feedback").hidden = false;
+    const qs = new URLSearchParams(location.search), qv = qs.get("v");
+    const fromPage = qs.get("from") === "study" ? "study" : "home";
+    if (location.hash === "#feedback") {
+      $("feedback").scrollIntoView({ block: "start" });
+      const f1 = document.querySelector("input[name=rating]"); if (f1) f1.focus({ preventScroll: true });
+    }
+    const vid = /^[A-Za-z0-9_-]{11}$/.test(qv || "") ? qv : null;
+    let sending = false;
+    $("fbSend").onclick = async () => {
+      if (sending) return;
+      const m = $("fbMsg"), pick = document.querySelector("input[name=rating]:checked");
+      if (!pick) { m.className = "bad"; m.textContent = "별점을 먼저 골라 주세요"; return; }
+      sending = true; $("fbSend").disabled = true;
+      let r;
+      try { r = await C.feedback(+pick.value, $("fbNote").value, vid, fromPage); }
+      catch (e) { r = { ok: false, message: "보내지 못했어요. 잠시 후 다시 해 주세요" }; }
+      sending = false; $("fbSend").disabled = false;
+      m.className = r.ok ? "ok" : "bad";
+      m.textContent = r.ok ? "의견 고마워요! 더 좋게 고칠게요 🙌" : r.message;
+      if (r.ok) { $("fbNote").value = ""; pick.checked = false; }
+    };
+  }
   window.__shelfReady = true;
 })();
 </script>

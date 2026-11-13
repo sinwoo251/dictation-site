@@ -193,7 +193,8 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
 .pk-flash.go{animation:pk-flash 1s ease-out forwards}
 @keyframes pk-flash{0%{opacity:0;transform:scale(.3)}25%{opacity:1}100%{opacity:0;transform:scale(1.4)}}
 .pk-hint{position:absolute;left:0;right:0;bottom:-40px;text-align:center;color:#cfd3da;font-size:14px;margin:0}
-.pk-actions{position:absolute;left:0;right:0;bottom:-58px;display:flex;gap:8px;justify-content:center}
+.pk-actions{position:absolute;left:50%;transform:translateX(-50%);top:calc(100% + 14px);width:max-content;max-width:92vw;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pk-actions a.btn{text-decoration:none}
 .pk-actions[hidden]{display:none}
 .fcard{position:absolute;inset:0;opacity:0;transform:rotateY(180deg) scale(.8);transform-style:preserve-3d;pointer-events:none}
 .fcard.show{animation:fc-in .9s cubic-bezier(.2,.9,.25,1.15) forwards;pointer-events:auto}
@@ -377,7 +378,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px}
       </div>
     </div>
     <p class="pk-hint" id="pkHint">모든 문장을 끝냈어요! 팩을 눌러 보세요</p>
-    <div class="pk-actions" id="pkActions" hidden><button class="btn" id="pkReport">📊 전체 분석</button><button class="btn" id="pkClose">닫기</button></div>
+    <div class="pk-actions" id="pkActions" hidden><button class="btn" id="pkReport">📊 전체 분석</button><a class="btn" id="cardFeedback" hidden>의견 남기기 →</a><button class="btn" id="pkClose">닫기</button></div>
   </div>
 </div>
 
@@ -1039,9 +1040,16 @@ function boot() {
     $("pack").hidden = false;
     $("fcard").classList.remove("show"); $("pkPack").classList.remove("open"); $("pkFlash").classList.remove("go");
     $("pkActions").hidden = true;
+    paintFeedback();
     if (withPack && !reduced()) {
       $("pkPack").hidden = false; $("pkHint").hidden = false; $("pkPack").focus();
     } else revealCard(false);
+  }
+  function paintFeedback() {   // 웹(설정 있음)·시행일 이후에만, 진짜 영상 ID일 때만
+    const a = $("cardFeedback"); let ok = false;
+    try { ok = !!(window.CLOUD_CONFIG && window.Collect && Collect.reached() && /^[\w-]{11}$/.test(BASE_VIDEO)); } catch (e) {}
+    a.hidden = !ok;
+    if (ok) a.href = "index.html?v=" + encodeURIComponent(BASE_VIDEO) + "&from=study#feedback";
   }
   function revealCard(anim = true) {
     $("pkPack").classList.add("open"); $("pkHint").hidden = true;

@@ -79,8 +79,8 @@ window.Collect = (() => {
   }
 
   // ── 화면: 안내 띠, 변경 공지, 기록 설정 스위치 ──
-  const BAR = "display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:8px 16px;font-size:13px;background:#f3efe6;color:#3a352c;border-bottom:1px solid #ddd6c6";
-  const BTN = "font:inherit;padding:2px 10px;border-radius:6px;border:1px solid #bdb5a2;background:#fff;color:inherit;cursor:pointer";
+  const BAR = "display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:8px 16px;font-size:13px;background:var(--paper,#f3efe6);color:var(--ink,#3a352c);border-bottom:1px solid var(--line,#ddd6c6)";
+  const BTN = "font:inherit;padding:2px 10px;border-radius:6px;border:1px solid var(--line,#bdb5a2);background:var(--bg,#fff);color:inherit;cursor:pointer";
   const bar = (id, html) => { const d = document.createElement("div"); d.id = id; d.setAttribute("role", "status"); d.style.cssText = BAR; d.innerHTML = html; document.body.prepend(d); return d; };
 
   function paint() {
@@ -102,7 +102,7 @@ window.Collect = (() => {
     // 시행 전에는 첫 화면에만 변경 공지
     if (!reached() && /^\d{4}-\d{2}-\d{2}$/.test(cfg.collectFrom || "") && document.getElementById("grid")) {
       const d = document.createElement("span"); d.textContent = cfg.collectFrom;
-      bar("policyNotice", "<span>개인정보처리방침과 이용약관이 " + d.innerHTML + '부터 바뀌어요: 이름 없는 채점 기록 수집, 이용약관 신설.</span> <a href="privacy.html">방침 보기</a>');
+      bar("policyNotice", "<span>개인정보처리방침과 이용약관이 " + d.innerHTML + '부터 바뀌어요: 이름 없는 채점 기록 수집, 의견 남기기, 이용약관 신설.</span> <a href="privacy.html">방침 보기</a>');
     }
     const t = document.getElementById("collectToggle");
     if (t) t.onchange = () => set(t.checked);
@@ -112,5 +112,5 @@ window.Collect = (() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ui); else ui();
   setInterval(() => { flush(); }, EVERY);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(true); });
-  return { add, enabled, set, flush };
+  return { add, enabled, set, flush, reached };
 })();
